@@ -20,6 +20,7 @@ class UsersTable(tables.TableRegion):
     CREATE_USER_FORM_FIELDS = ("name", "email", "password",
                                "confirm_password", "project", "role_id")
     EDIT_USER_FORM_FIELDS = ("name", "email", "project")
+    CHANGE_PASSWORD_FORM_FIELDS = ("password", "confirm_password", "name")
 
     @tables.bind_table_action('create')
     def create_user(self, create_button):
@@ -32,6 +33,13 @@ class UsersTable(tables.TableRegion):
         edit_button.click()
         return forms.FormRegion(self.driver, self.conf,
                                 field_mappings=self.EDIT_USER_FORM_FIELDS)
+
+    @tables.bind_row_action('change_password')
+    def change_password(self, change_password_button, row):
+        change_password_button.click()
+        return forms.FormRegion(
+            self.driver, self.conf,
+            field_mappings=self.CHANGE_PASSWORD_FORM_FIELDS)
 
     @tables.bind_table_action('delete')
     def delete_user(self, delete_button):
@@ -90,6 +98,13 @@ class UsersPage(basepage.BaseNavigationPage):
 
         edit_user_form.cancel()
         return user_info
+
+    def change_password(self, name, new_passwd):
+        row = self._get_row_with_user_name(name)
+        change_password_form = self.users_table.change_password(row)
+        change_password_form.password.text = new_passwd
+        change_password_form.confirm_password.text = new_passwd
+        change_password_form.submit()
 
     def delete_user(self, name):
         row = self._get_row_with_user_name(name)

@@ -28,22 +28,52 @@ class TestUser(helpers.AdminTestCase):
     def project_name(self):
         return helpers.gen_random_resource_name("project")
 
+    def create_user(self, page, user_name, password,
+                    project='admin', role='admin'):
+        """Creates new user
+        :param page: Connection point;
+        :param user_name: Name for a new user;
+        :param password: Password for a new user;
+        :param project: Primary Project;
+        :param role: Role in project;
+        """
+        page.create_user(user_name, password=password, project=project,
+                         role=role)
+        self.assertTrue(page.find_message_and_dismiss(messages.SUCCESS))
+        self.assertFalse(page.find_message_and_dismiss(messages.ERROR))
+        self.assertTrue(page.is_user_present(self.USER_NAME))
+
+    def delete_user(self, page, user_name):
+        """Deletes user
+        :param page: Connection point;
+        :param user_name: Name for a new user;
+        """
+        page.delete_user(user_name)
+        self.assertTrue(page.find_message_and_dismiss(messages.SUCCESS))
+        self.assertFalse(page.find_message_and_dismiss(messages.ERROR))
+        self.assertFalse(page.is_user_present(self.USER_NAME))
+
     def test_create_delete_user(self):
-        username = self.username
-
         users_page = self.home_pg.go_to_identity_userspage()
-        password = self.TEST_PASSWORD
+        self.create_user(users_page, self.USER_NAME, self.TEST_PASSWORD)
+        self.delete_user(users_page, self.USER_NAME)
 
-        users_page.create_user(username, password=password,
-                               project='admin', role='admin')
+    def test_change_password_for_user(self):
+        """Test to verify password change for newly created user.
+        * 1) Go to Identity -> Users
+        * 2) Create new user in 'admin' project with 'admin' role
+        * 3) For the created user change password
+        * 4) Check that password was changed successfully
+        """
+        users_page = self.home_pg.go_to_identity_userspage()
+        self.create_user(users_page, self.USER_NAME, self.TEST_PASSWORD)
+
+        users_page.change_password(self.USER_NAME, 'new password')
         self.assertTrue(users_page.find_message_and_dismiss(messages.SUCCESS))
         self.assertFalse(users_page.find_message_and_dismiss(messages.ERROR))
-        self.assertTrue(users_page.is_user_present(username))
+        self.assertTrue(users_page.is_user_present(self.USER_NAME))
 
-        users_page.delete_user(username)
-        self.assertTrue(users_page.find_message_and_dismiss(messages.SUCCESS))
-        self.assertFalse(users_page.find_message_and_dismiss(messages.ERROR))
-        self.assertFalse(users_page.is_user_present(username))
+        self.delete_user(users_page, self.USER_NAME)
 
     def test_edit_user(self):
         username = self.username
@@ -93,4 +123,3 @@ class TestUser(helpers.AdminTestCase):
             projects_page.find_message_and_dismiss(messages.SUCCESS))
         self.assertFalse(
             projects_page.find_message_and_dismiss(messages.ERROR))
-        self.assertFalse(projects_page.is_project_present(new_project_name))
