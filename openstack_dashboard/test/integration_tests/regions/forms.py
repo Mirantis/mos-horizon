@@ -526,3 +526,32 @@ class ItemTextDescription(baseregion.BaseRegion):
             values.extend([x.text for x in
                            section.find_elements(*self._value_locator)])
         return dict(zip(keys, values))
+
+
+class ReadOnlyFormRegion(BaseFormRegion):
+    """Form with read only fields. Typical example is located on
+    Project/Compute/Access and Security/API Access page
+    (View Credentials form).
+    """
+
+    _labels_locator = (by.By.CSS_SELECTOR, '.left > fieldset label, '
+                                           '.right > fieldset label')
+
+    _fields_locator = (by.By.CSS_SELECTOR, '.left > fieldset input, '
+                                           '.right > fieldset input')
+
+    @property
+    def get_form_labels(self):
+        label_elements = self._get_elements(*self._labels_locator)
+        labels = [label_element.text for label_element in label_elements]
+        return labels
+
+    @property
+    def get_form_fields(self):
+        field_elements = self._get_elements(*self._fields_locator)
+        field_values = [field_element.get_attribute("value")
+                        for field_element in field_elements]
+        labels = self.get_form_labels
+        for item in range(len(labels)):
+            self._dynamic_properties[labels[item]] = field_values[item]
+        return self._dynamic_properties
