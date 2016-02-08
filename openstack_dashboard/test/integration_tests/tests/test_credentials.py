@@ -72,3 +72,30 @@ class TestDownloadRCFile(helpers.AdminTestCase):
     def tearDown(self):
         super(TestDownloadRCFile, self).tearDown()
         remove(join(self._directory, listdir(self._directory)[0]))
+
+
+class ViewCredentials(helpers.AdminTestCase):
+
+    def test_view_credentials(self):
+        """This test checks user credentials
+        Steps:
+        1) Login to Horizon Dashboard as admin user
+        2) Navigate to Project > Compute > Access & Security > API Access tab
+        3) Click on "View Credentials" button
+        4) View opened dialog window "User Credentials", check its contents.
+        Following fields in "User Credentials" dialog must be displayed:
+        User Name; Project Name; Project ID; Authentication URL.
+        """
+        api_access_page = self.home_pg.\
+            go_to_compute_accessandsecurity_apiaccesspage()
+        view_credentials_dict = api_access_page.view_user_credentials()
+
+        user_name = self.TEST_USER_NAME
+        project_name = self.HOME_PROJECT
+        auth_url = api_access_page.get_service_endpoint_from_row('Identity')
+        projects_page = self.home_pg.go_to_identity_projectspage()
+        project_id = projects_page.get_project_id_from_row(project_name)
+        actual_dict = {'User Name': user_name, 'Project Name': project_name,
+                       'Project ID': project_id,
+                       'Authentication URL': auth_url}
+        self.assertEqual(actual_dict, view_credentials_dict)
