@@ -40,6 +40,7 @@ class InstancesTable(tables.TableRegion):
         "volume_id", "volume_snapshot_id", "image_id", "volume_size",
         "vol_delete_on_instance_delete"),
         ("keypair", "groups"),
+        ("network", ),
         ("script_source", "script_upload", "script_data"),
         ("disk_config", "config_drive")
     )

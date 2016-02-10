@@ -23,7 +23,7 @@ def login(test_case):
                                              test_case.CONFIG)
     test_case.login_pg.go_to_login_page()
 
-    test_case.create_demo_user()
+    # test_case.create_demo_user()
 
     test_case.home_pg = test_case.login_pg.login(test_case.TEST_USER_NAME,
                                                  test_case.TEST_PASSWORD)

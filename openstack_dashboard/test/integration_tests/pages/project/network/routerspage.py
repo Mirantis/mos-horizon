@@ -32,6 +32,23 @@ class RoutersTable(tables.TableRegion):
         return forms.BaseFormRegion(self.driver, self.conf)
 
 
+class InterfacesTable(tables.TableRegion):
+    name = "interfaces"
+    ADD_INTERFACE_FORM_FIELDS = ("subnet_id", "ip_address",
+                                 "router_name", "router_id")
+
+    @tables.bind_table_action('create')
+    def add_interface(self, add_interface_button):
+        add_interface_button.click()
+        return forms.FormRegion(self.driver, self.conf, None,
+                                self.ADD_INTERFACE_FORM_FIELDS)
+
+    @tables.bind_table_action('delete')
+    def delete_interface(self, delete_interface_button):
+        delete_interface_button.click()
+        return forms.BaseFormRegion(self.driver, self.conf)
+
+
 class RoutersPage(basepage.BaseNavigationPage):
 
     DEFAULT_ADMIN_STATE_UP = 'True'
