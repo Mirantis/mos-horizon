@@ -123,3 +123,28 @@ class TestUser(helpers.AdminTestCase):
             projects_page.find_message_and_dismiss(messages.SUCCESS))
         self.assertFalse(
             projects_page.find_message_and_dismiss(messages.ERROR))
+
+    def test_disable_enable_user(self):
+        """Test to verify disable and then enable user.
+        * 1) Go to Identity -> Users;
+        * 2) Create new user in 'admin' project with 'admin' role;
+        * 3) For the created user perform 'Disable User' action;
+        * 4) Check that operation was successful and 'Enabled' = 'No';
+        * 5) For the same user perform 'Enable User' action;
+        * 6) Check that operation was successful and 'Enabled' = 'Yes';
+        * 7) Delete user;
+        """
+        users_page = self.home_pg.go_to_identity_userspage()
+        password = self.TEST_PASSWORD
+
+        self.create_user(users_page, self.USER_NAME, password)
+
+        for action in ('disable', 'enable'):
+            self.assertTrue(users_page.
+                            disable_enable_user(self.USER_NAME, action))
+            self.assertTrue(users_page.
+                            find_message_and_dismiss(messages.SUCCESS))
+            self.assertFalse(users_page.
+                             find_message_and_dismiss(messages.ERROR))
+
+        self.delete_user(users_page, self.USER_NAME)

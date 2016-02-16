@@ -41,6 +41,11 @@ class UsersTable(tables.TableRegion):
             self.driver, self.conf,
             field_mappings=self.CHANGE_PASSWORD_FORM_FIELDS)
 
+    # Row action 'Disable user' / 'Enable user'
+    @tables.bind_row_action('toggle')
+    def disable_enable_user(self, disable_enable_user_button, row):
+        disable_enable_user_button.click()
+
     @tables.bind_table_action('delete')
     def delete_user(self, delete_button):
         delete_button.click()
@@ -50,6 +55,7 @@ class UsersTable(tables.TableRegion):
 class UsersPage(basepage.BaseNavigationPage):
 
     USERS_TABLE_NAME_COLUMN = 'name'
+    USERS_TABLE_ENABLED_COLUMN = 'enabled'
 
     def __init__(self, driver, conf):
         super(UsersPage, self).__init__(driver, conf)
@@ -114,3 +120,11 @@ class UsersPage(basepage.BaseNavigationPage):
 
     def is_user_present(self, name):
         return bool(self._get_row_with_user_name(name))
+
+    def disable_enable_user(self, name, action):
+        row = self._get_row_with_user_name(name)
+        self.users_table.disable_enable_user(row)
+        if action == 'disable':
+            return row.cells[self.USERS_TABLE_ENABLED_COLUMN].text == 'No'
+        elif action == 'enable':
+            return row.cells[self.USERS_TABLE_ENABLED_COLUMN].text == 'Yes'
