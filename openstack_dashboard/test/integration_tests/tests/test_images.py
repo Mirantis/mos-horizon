@@ -231,13 +231,8 @@ class TestImagesBasic(helpers.TestCase):
             self.image_delete(new_image_name)
 
 
-class TestImagesAdvanced(helpers.TestCase):
+class TestImagesAdvanced(TestImagesBasic):
     """Login as demo user"""
-    IMAGE_NAME = helpers.gen_random_resource_name("image")
-
-    @property
-    def images_page(self):
-        return self.home_pg.go_to_compute_imagespage()
 
     def test_create_volume_from_image(self):
         """This test case checks create volume from image functionality:
@@ -296,6 +291,44 @@ class TestImagesAdvanced(helpers.TestCase):
         self.assertFalse(
             instances_page.find_message_and_dismiss(messages.ERROR))
         self.assertTrue(instances_page.is_instance_deleted(target_instance))
+
+    def test_edit_image_disk_and_ram_size(self):
+        """tests that it is not possible to launch instances in case of limits
+        * logs in as admin user
+        * creates image from locally downloaded file
+        * verifies the image appears in the images table as active
+        * sets minimum disk value to 60
+        * verifies that edit action was successful
+        * executes launch image action
+        * verifies that minimum possible flavor to launch is m1.large
+        * sets minimum disk value to 0 and minimum ram value to 4096
+        * verifies that edit action was successful
+        * executes launch image action
+        * verifies that minimum possible flavor to launch is m1.medium
+        * deletes the image
+        * verifies the image does not appear in the table after deletion
+        """
+        images_page = self.image_create()
+
+        images_page.edit_image(self.IMAGE_NAME, minimum_disk=60)
+        self.assertTrue(images_page.find_message_and_dismiss(messages.SUCCESS))
+        self.assertFalse(images_page.find_message_and_dismiss(messages.ERROR))
+        self.assertLaunchedFlavorIs('m1.large', images_page)
+
+        images_page.edit_image(self.IMAGE_NAME, minimum_disk=0,
+                               minimum_ram=4096)
+        self.assertTrue(images_page.find_message_and_dismiss(messages.SUCCESS))
+        self.assertFalse(images_page.find_message_and_dismiss(messages.ERROR))
+        self.assertLaunchedFlavorIs('m1.medium', images_page)
+
+        self.image_delete()
+
+    def assertLaunchedFlavorIs(self, expected_flavor_name, images_page):
+        launch_instance_form = images_page.get_launch_instance_form(
+            self.IMAGE_NAME)
+        flavor_name = launch_instance_form.flavor.text
+        launch_instance_form.cancel()
+        self.assertEqual(flavor_name, expected_flavor_name)
 
 
 class TestImagesAdmin(helpers.AdminTestCase, TestImagesBasic):

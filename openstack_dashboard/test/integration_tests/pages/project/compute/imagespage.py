@@ -239,8 +239,7 @@ class ImagesPage(basepage.BaseNavigationPage):
 
     def launch_instance_from_image(self, name, instance_name,
                                    instance_count=1, flavor=None):
-        row = self._get_row_with_image_name(name)
-        launch_instance = self.images_table.launch_instance(row)
+        launch_instance = self.get_launch_instance_form(name)
         launch_instance.availability_zone.value = \
             self.conf.launch_instances.available_zone
         launch_instance.name.text = instance_name
@@ -250,3 +249,7 @@ class ImagesPage(basepage.BaseNavigationPage):
         launch_instance.count.value = instance_count
         launch_instance.submit()
         return InstancesPage(self.driver, self.conf)
+
+    def get_launch_instance_form(self, name):
+        row = self._get_row_with_image_name(name)
+        return self.images_table.launch_instance(row)
