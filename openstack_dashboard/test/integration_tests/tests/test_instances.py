@@ -14,12 +14,22 @@ from openstack_dashboard.test.integration_tests.regions import messages
 
 
 class TestInstances(helpers.TestCase):
+    NETWORK_NG_NAME = "private"
     INSTANCE_NAME = helpers.gen_random_resource_name('instance',
                                                      timestamp=False)
 
     @property
     def instances_page(self):
         return self.home_pg.go_to_compute_instancespage()
+
+    def delete_instance(self):
+        instances_page = self.instances_page
+        instances_page.delete_instance(self.INSTANCE_NAME)
+        self.assertTrue(
+            instances_page.find_message_and_dismiss(messages.SUCCESS))
+        self.assertFalse(
+            instances_page.find_message_and_dismiss(messages.ERROR))
+        self.assertTrue(instances_page.is_instance_deleted(self.INSTANCE_NAME))
 
     @decorators.skip_new_design
     def test_create_delete_instance(self):
@@ -38,13 +48,18 @@ class TestInstances(helpers.TestCase):
             instances_page.find_message_and_dismiss(messages.ERROR))
         self.assertTrue(instances_page.is_instance_active(self.INSTANCE_NAME))
 
-        instances_page = self.instances_page
-        instances_page.delete_instance(self.INSTANCE_NAME)
-        self.assertTrue(
-            instances_page.find_message_and_dismiss(messages.SUCCESS))
+        self.delete_instance()
+
+    def test_create_delete_instance_ng(self):
+        instances_page = self.home_pg.go_to_compute_instancespage()
+
+        instances_page.create_instance_ng(self.INSTANCE_NAME,
+                                          network=self.NETWORK_NG_NAME)
         self.assertFalse(
             instances_page.find_message_and_dismiss(messages.ERROR))
-        self.assertTrue(instances_page.is_instance_deleted(self.INSTANCE_NAME))
+        self.assertTrue(instances_page.is_instance_active(self.INSTANCE_NAME))
+
+        self.delete_instance()
 
     def test_instances_pagination(self):
         """This test checks instance pagination
@@ -232,6 +247,7 @@ class TestInstances(helpers.TestCase):
 
 
 class TestAdminInstances(helpers.AdminTestCase, TestInstances):
+    NETWORK_NG_NAME = "public"
     INSTANCE_NAME = helpers.gen_random_resource_name('instance',
                                                      timestamp=False)
 
