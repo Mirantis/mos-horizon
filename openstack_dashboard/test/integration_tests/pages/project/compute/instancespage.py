@@ -9,9 +9,27 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
+from time import sleep
+
 from openstack_dashboard.test.integration_tests.pages import basepage
 from openstack_dashboard.test.integration_tests.regions import forms
+from openstack_dashboard.test.integration_tests.regions import menus
 from openstack_dashboard.test.integration_tests.regions import tables
+
+
+class InstanceFormNG(forms.TabbedFormRegionNG):
+    field_mappings = ({"name": "name",
+                       "availability_zone": "availability-zone",
+                       "instance_count": "count"},
+                      ({"boot_source_type": "boot-source-type",
+                        "vol_create": "vol-create",
+                        'boot_sources': menus.TransferTableMenuRegion}),
+                      ({'flavors': menus.TransferTableMenuRegion}),
+                      ({'networks': menus.TransferTableMenuRegion}))
+
+    def __init__(self, driver, conf):
+        super(InstanceFormNG, self).__init__(
+            driver, conf, field_mappings=self.field_mappings)
 
 
 class InstancesTable(tables.TableRegion):
@@ -32,6 +50,11 @@ class InstancesTable(tables.TableRegion):
         return forms.TabbedFormRegion(
             self.driver, self.conf,
             field_mappings=self.CREATE_INSTANCE_FORM_FIELDS)
+
+    @tables.bind_table_action('launch-ng')
+    def launch_instance_ng(self, launch_button):
+        launch_button.click()
+        return InstanceFormNG(self.driver, self.conf)
 
     @tables.bind_table_action('delete')
     def delete_instance(self, delete_button):
@@ -54,6 +77,11 @@ class InstancesPage(basepage.BaseNavigationPage):
     INSTANCES_TABLE_STATUS_COLUMN = 'status'
     INSTANCES_TABLE_IP_COLUMN = 'ip'
     INSTANCES_TABLE_IMAGE_NAME_COLUMN = 'image_name'
+
+    DEFAULT_BOOT_SOURCE_NG = 'image'
+    DEFAULT_VOLUME_CREATION_NG = 'No'
+    DEFAULT_BOOT_SOURCE_NAME_NG = 'TestVM'
+    DEFAULT_NETWORK_NG = "admin_internal_net"
 
     def __init__(self, driver, conf):
         super(InstancesPage, self).__init__(driver, conf)
@@ -97,6 +125,38 @@ class InstancesPage(basepage.BaseNavigationPage):
             instance_form.volume_size.value = device_size
         if vol_delete_on_instance_delete:
             instance_form.vol_delete_on_instance_delete.mark()
+        instance_form.submit()
+
+    def create_instance_ng(self, name,
+                           availability_zone=None,
+                           instance_count=DEFAULT_COUNT,
+                           boot_source_type=DEFAULT_BOOT_SOURCE_NG,
+                           image_name=DEFAULT_BOOT_SOURCE_NAME_NG,
+                           vol_create=DEFAULT_VOLUME_CREATION_NG,
+                           flavor_size=DEFAULT_FLAVOR,
+                           network=DEFAULT_NETWORK_NG):
+        if not availability_zone:
+            availability_zone = self.conf.launch_instances.available_zone
+
+        instance_form = self.instances_table.launch_instance_ng()
+        sleep(2)
+        instance_form.name.text = name
+        instance_form.availability_zone.text = availability_zone
+        instance_form.instance_count.value = instance_count
+
+        instance_form.switch_to(1)
+        sleep(2)
+        instance_form.boot_source_type = boot_source_type
+        instance_form.vol_create.text = vol_create
+        instance_form.boot_sources.allocate_item(name=image_name)
+
+        instance_form.switch_to(2)
+        sleep(2)
+        instance_form.flavors.allocate_item(name=flavor_size)
+
+        instance_form.switch_to(3)
+        sleep(2)
+        instance_form.networks.allocate_item(name=network)
         instance_form.submit()
 
     def delete_instance(self, name):

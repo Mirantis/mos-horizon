@@ -240,7 +240,6 @@ class UserDropDownMenuRegion(DropDownMenuRegion):
 
 
 class TabbedMenuRegion(baseregion.BaseRegion):
-
     _tab_locator = (by.By.CSS_SELECTOR, 'a')
     _default_src_locator = (by.By.CSS_SELECTOR, '.selenium-nav-region')
 
@@ -248,8 +247,12 @@ class TabbedMenuRegion(baseregion.BaseRegion):
         self._get_elements(*self._tab_locator)[index].click()
 
 
-class ProjectDropDownRegion(DropDownMenuRegion):
+class TabbedMenuRegionNG(TabbedMenuRegion):
+    _tab_locator = (by.By.CSS_SELECTOR, 'li.nav-item')
+    _default_src_locator = (by.By.CSS_SELECTOR, '.wizard-nav')
 
+
+class ProjectDropDownRegion(DropDownMenuRegion):
     _menu_first_child_locator = (by.By.CSS_SELECTOR, '*')
     _menu_items_locator = (
         by.By.CSS_SELECTOR, 'ul.context-selection li > a')
@@ -262,3 +265,37 @@ class ProjectDropDownRegion(DropDownMenuRegion):
         else:
             raise exceptions.NoSuchElementException(
                 "Not found element with text: %s" % name)
+
+
+class TransferTableMenuRegion(baseregion.BaseRegion):
+    """Class that represents Angular transfer table."""
+    _default_src_locator = (by.By.CSS_SELECTOR, '.transfer-table')
+
+    _allocated_locator = (by.By.CSS_SELECTOR, '.transfer-allocated tbody > tr')
+    _available_locator = (by.By.CSS_SELECTOR, '.transfer-available tbody > tr')
+    _add_remove_sublocator = (by.By.CSS_SELECTOR, 'td.action-col .btn')
+    _comp_cell_sublocator = (by.By.CSS_SELECTOR, 'td')
+
+    def _get_item_name(self, element):
+        cells = element.find_elements(*self._comp_cell_sublocator)
+        return cells and cells[1].text
+
+    @property
+    def available_items(self):
+        return {self._get_item_name(el): el for el in
+                self._get_elements(*self._available_locator)}
+
+    @property
+    def allocated_items(self):
+        return {self._get_item_name(el): el for el in
+                self._get_element(*self._allocated_locator)}
+
+    def allocate_item(self, name):
+        item = self.available_items[name]
+        allocate_btn = item.find_element(*self._add_remove_sublocator)
+        allocate_btn.click()
+
+    def deallocate_item(self, name):
+        item = self.allocated_items[name]
+        deallocate_btn = item.find_element(*self._add_remove_sublocator)
+        deallocate_btn.click()
