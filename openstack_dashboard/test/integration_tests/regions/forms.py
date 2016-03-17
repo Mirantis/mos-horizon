@@ -499,6 +499,14 @@ class MetadataFormRegion(BaseFormRegion):
         else:
             raise AttributeError("Unknown form field '{}'.".format(field_name))
 
+    def get_existing_metadata(self):
+        metadata = {}
+        for div in self._get_elements(*self._input_fields):
+            if div.text not in ('Custom',):
+                field = div.find_element(by.By.CSS_SELECTOR, 'input')
+                metadata[div.text] = field.get_attribute('value')
+        return metadata
+
 
 class ItemTextDescription(baseregion.BaseRegion):
 
