@@ -21,6 +21,7 @@ from openstack_dashboard.test.integration_tests.regions import tables
 class KeypairsTable(tables.TableRegion):
     name = "keypairs"
     CREATE_KEY_PAIR_FORM_FIELDS = ('name',)
+    IMPORT_KEY_PAIR_FORM_FIELDS = ('name', 'public_key')
 
     @tables.bind_table_action('create')
     def create_keypair(self, create_button):
@@ -28,6 +29,13 @@ class KeypairsTable(tables.TableRegion):
         return forms.FormRegion(
             self.driver, self.conf,
             field_mappings=self.CREATE_KEY_PAIR_FORM_FIELDS)
+
+    @tables.bind_table_action('import')
+    def import_keypair(self, import_button):
+        import_button.click()
+        return forms.FormRegion(
+            self.driver, self.conf,
+            field_mappings=self.IMPORT_KEY_PAIR_FORM_FIELDS)
 
     @tables.bind_row_action('delete', primary=True)
     def delete_keypair(self, delete_button, row):
@@ -64,6 +72,12 @@ class KeypairsPage(basepage.BaseNavigationPage):
         create_keypair_form = self.keypairs_table.create_keypair()
         create_keypair_form.name.text = keypair_name
         create_keypair_form.submit()
+
+    def import_keypair(self, keypair_name, public_key):
+        import_keypair_form = self.keypairs_table.import_keypair()
+        import_keypair_form.name.text = keypair_name
+        import_keypair_form.public_key.text = public_key
+        import_keypair_form.submit()
 
     def delete_keypair(self, name):
         row = self._get_row_with_keypair_name(name)
