@@ -12,6 +12,7 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
+from os import path
 
 from openstack_dashboard.test.integration_tests import helpers
 from openstack_dashboard.test.integration_tests.regions import messages
@@ -19,20 +20,46 @@ from openstack_dashboard.test.integration_tests.regions import messages
 
 class TestKeypair(helpers.TestCase):
     """Checks that the user is able to create/delete keypair."""
-    KEYPAIR_NAME = helpers.gen_random_resource_name("keypair")
+
+    @property
+    def keypair_name(self):
+        return helpers.gen_random_resource_name("keypair")
+
+    @property
+    def public_key(self):
+        key_path = path.join(path.dirname(__file__), 'test-data', 'key.pub')
+        with open(key_path) as f:
+            return f.read()
 
     def test_keypair(self):
+        keypair_name = self.keypair_name
+
         keypair_page = self.home_pg.\
             go_to_compute_accessandsecurity_keypairspage()
-        keypair_page.create_keypair(self.KEYPAIR_NAME)
+        keypair_page.create_keypair(keypair_name)
         self.assertFalse(keypair_page.find_message_and_dismiss(messages.ERROR))
 
         keypair_page = self.home_pg.\
             go_to_compute_accessandsecurity_keypairspage()
-        self.assertTrue(keypair_page.is_keypair_present(self.KEYPAIR_NAME))
+        self.assertTrue(keypair_page.is_keypair_present(keypair_name))
 
-        keypair_page.delete_keypair(self.KEYPAIR_NAME)
+        keypair_page.delete_keypair(keypair_name)
         self.assertTrue(
             keypair_page.find_message_and_dismiss(messages.SUCCESS))
         self.assertFalse(keypair_page.find_message_and_dismiss(messages.ERROR))
-        self.assertFalse(keypair_page.is_keypair_present(self.KEYPAIR_NAME))
+        self.assertFalse(keypair_page.is_keypair_present(keypair_name))
+
+    def test_import_keypair(self):
+        keypair_name = self.keypair_name
+
+        keypair_page = self.home_pg.\
+            go_to_compute_accessandsecurity_keypairspage()
+        keypair_page.import_keypair(keypair_name, self.public_key)
+        self.assertFalse(keypair_page.find_message_and_dismiss(messages.ERROR))
+        self.assertTrue(keypair_page.is_keypair_present(keypair_name))
+
+        keypair_page.delete_keypair(keypair_name)
+        self.assertTrue(
+            keypair_page.find_message_and_dismiss(messages.SUCCESS))
+        self.assertFalse(keypair_page.find_message_and_dismiss(messages.ERROR))
+        self.assertFalse(keypair_page.is_keypair_present(keypair_name))
