@@ -81,7 +81,8 @@ class Navigation(object):
                                     ITEMS:
                                         (
                                             "Volumes",
-                                            "Volume Snapshots"
+                                            "Volume Snapshots",
+                                            "Volume Backups"
                                         )
                                 },
                             ITEMS:
