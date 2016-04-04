@@ -39,6 +39,8 @@ class VolumesTable(tables.TableRegion):
     EDIT_VOLUME_FORM_FIELDS = ("name", "description")
 
     CREATE_VOLUME_SNAPSHOT_FORM_FIELDS = ("name", "description")
+    CREATE_VOLUME_BACKUP_FORM_FIELDS = ("name", "description",
+                                        "container_name")
 
     EXTEND_VOLUME_FORM_FIELDS = ("new_size",)
 
@@ -154,6 +156,13 @@ class VolumesTable(tables.TableRegion):
             except exceptions.StaleElementReferenceException:
                 pass
         return None
+
+    @tables.bind_row_action('backups')
+    def create_backup(self, create_backup_button, row):
+        create_backup_button.click()
+        return forms.FormRegion(
+            self.driver, self.conf,
+            field_mappings=self.CREATE_VOLUME_BACKUP_FORM_FIELDS)
 
 
 class VolumesPage(basepage.BaseNavigationPage):
@@ -292,6 +301,20 @@ class VolumesPage(basepage.BaseNavigationPage):
             snapshot_form.description.text = description
         snapshot_form.submit()
         return VolumesnapshotsPage(self.driver, self.conf)
+
+    def create_volume_backup(self, volume, backup, description=None,
+                             container_name=None):
+        from openstack_dashboard.test.integration_tests.pages.project.compute \
+            .volumes.volumebackupspage import VolumebackupsPage
+        row = self._get_row_with_volume_name(volume)
+        backup_form = self.volumes_table.create_backup(row)
+        backup_form.name.text = backup
+        if description:
+            backup_form.description.text = description
+        if container_name:
+            backup_form.container_name.text = container_name
+        backup_form.submit()
+        return VolumebackupsPage(self.driver, self.conf)
 
     def extend_volume(self, name, new_size):
         row = self._get_row_with_volume_name(name)
