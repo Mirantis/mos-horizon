@@ -17,7 +17,7 @@ from oslo_config import cfg
 
 DashboardGroup = [
     cfg.StrOpt('dashboard_url',
-               default='http://localhost/',
+               default=os.environ.get('DASHBOARD_URL', 'http://localhost/'),
                help="Where the dashboard can be found"),
     cfg.StrOpt('help_url',
                default='http://docs.openstack.org/',
