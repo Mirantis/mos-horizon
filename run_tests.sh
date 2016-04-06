@@ -426,9 +426,9 @@ function run_integration_tests {
 
   echo "Running Horizon integration tests..."
   if [ -z "$testargs" ]; then
-      ${command_wrapper} nosetests openstack_dashboard/test/integration_tests/tests
+      ${command_wrapper} nosetests openstack_dashboard/test/integration_tests/tests $testopts
   else
-      ${command_wrapper} nosetests $testargs
+      ${command_wrapper} nosetests $testargs $testopts
   fi
   exit 0
 }
