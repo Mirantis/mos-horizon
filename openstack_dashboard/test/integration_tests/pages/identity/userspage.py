@@ -19,12 +19,19 @@ class UsersTable(tables.TableRegion):
     name = 'users'
     CREATE_USER_FORM_FIELDS = ("name", "email", "password",
                                "confirm_password", "project", "role_id")
+    EDIT_USER_FORM_FIELDS = ("name", "email", "project")
 
     @tables.bind_table_action('create')
     def create_user(self, create_button):
         create_button.click()
         return forms.FormRegion(self.driver, self.conf,
                                 field_mappings=self.CREATE_USER_FORM_FIELDS)
+
+    @tables.bind_row_action('edit')
+    def edit_user(self, edit_button, row):
+        edit_button.click()
+        return forms.FormRegion(self.driver, self.conf,
+                                field_mappings=self.EDIT_USER_FORM_FIELDS)
 
     @tables.bind_table_action('delete')
     def delete_user(self, delete_button):
@@ -58,6 +65,31 @@ class UsersPage(basepage.BaseNavigationPage):
         create_user_form.project.text = project
         create_user_form.role_id.text = role
         create_user_form.submit()
+
+    def edit_user(self, name, new_name=None, new_email=None,
+                  new_primary_project=None):
+        row = self._get_row_with_user_name(name)
+        edit_user_form = self.users_table.edit_user(row)
+        if new_name:
+            edit_user_form.name.text = new_name
+        if new_email:
+            edit_user_form.email.text = new_email
+        if new_primary_project:
+            edit_user_form.project.text = new_primary_project
+        edit_user_form.submit()
+
+    def get_user_info(self, name):
+        user_info = {}
+
+        row = self._get_row_with_user_name(name)
+        edit_user_form = self.users_table.edit_user(row)
+
+        user_info['name'] = edit_user_form.name.text
+        user_info['email'] = edit_user_form.email.text or None
+        user_info['primary_project'] = edit_user_form.project.text
+
+        edit_user_form.cancel()
+        return user_info
 
     def delete_user(self, name):
         row = self._get_row_with_user_name(name)

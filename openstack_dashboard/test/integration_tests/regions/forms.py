@@ -126,7 +126,7 @@ class BaseTextFormFieldRegion(BaseFormFieldRegion):
 
     @property
     def text(self):
-        return self.element.text
+        return self.element.text or self.element.get_attribute('value')
 
     @text.setter
     def text(self, text):
