@@ -19,6 +19,7 @@ import tempfile
 import time
 import traceback
 import uuid
+from functools import wraps
 
 from selenium.webdriver.common import action_chains
 from selenium.webdriver.common import by
@@ -67,6 +68,18 @@ def gen_temporary_file(name='', suffix='.qcow2', size=10485760):
     with tempfile.NamedTemporaryFile(prefix=name, suffix=suffix) as tmp_file:
         tmp_file.write(os.urandom(size))
         yield tmp_file.name
+
+
+def once_only(func):
+    called_funcs = []
+
+    @wraps(func)
+    def wrapper(*args, **kwgs):
+        if func.__name__ not in called_funcs:
+            called_funcs.append(func.__name__)
+            return func(*args, **kwgs)
+
+    return wrapper
 
 
 class AssertsMixin(object):
@@ -224,6 +237,14 @@ class BaseTestCase(testtools.TestCase):
 
 class TestCase(BaseTestCase, AssertsMixin):
 
+    ADMIN_NAME = BaseTestCase.CONFIG.identity.admin_username
+    ADMIN_PASSWORD = BaseTestCase.CONFIG.identity.admin_password
+    ADMIN_PROJECT = BaseTestCase.CONFIG.identity.admin_home_project
+
+    DEMO_NAME = BaseTestCase.CONFIG.identity.username
+    DEMO_PASSWORD = BaseTestCase.CONFIG.identity.password
+    DEMO_PROJECT = BaseTestCase.CONFIG.identity.home_project
+
     TEST_USER_NAME = BaseTestCase.CONFIG.identity.username
     TEST_PASSWORD = BaseTestCase.CONFIG.identity.password
     HOME_PROJECT = BaseTestCase.CONFIG.identity.home_project
@@ -233,6 +254,9 @@ class TestCase(BaseTestCase, AssertsMixin):
         self.login_pg = loginpage.LoginPage(self.driver, self.CONFIG)
         self.login_pg.go_to_login_page()
         self.zoom_out()
+
+        self.create_demo_user()
+
         self.home_pg = self.login_pg.login(self.TEST_USER_NAME,
                                            self.TEST_PASSWORD)
         self.home_pg.change_project(self.HOME_PROJECT)
@@ -240,6 +264,25 @@ class TestCase(BaseTestCase, AssertsMixin):
             self.home_pg.find_message_and_dismiss(messages.SUCCESS))
         self.assertFalse(
             self.home_pg.find_message_and_dismiss(messages.ERROR))
+
+    @once_only
+    def create_demo_user(self):
+        self.home_pg = self.login_pg.login(self.ADMIN_NAME,
+                                           self.ADMIN_PASSWORD)
+        self.home_pg.change_project(self.ADMIN_PROJECT)
+
+        projects_page = self.home_pg.go_to_identity_projectspage()
+        if not projects_page.is_project_present(self.DEMO_PROJECT):
+            projects_page.create_project(self.DEMO_PROJECT)
+
+        users_page = self.home_pg.go_to_identity_userspage()
+        if not users_page.is_user_present(self.DEMO_NAME):
+            users_page.create_user(self.DEMO_NAME, password=self.DEMO_PASSWORD,
+                                   project=self.DEMO_PROJECT, role='_member_')
+
+        if self.home_pg.is_logged_in:
+            self.home_pg.go_to_home_page()
+            self.home_pg.log_out()
 
     def tearDown(self):
         try:
