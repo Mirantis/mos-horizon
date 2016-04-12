@@ -276,9 +276,10 @@ class TestCase(BaseTestCase, AssertsMixin):
             projects_page.create_project(self.DEMO_PROJECT)
 
         users_page = self.home_pg.go_to_identity_userspage()
-        if not users_page.is_user_present(self.DEMO_NAME):
-            users_page.create_user(self.DEMO_NAME, password=self.DEMO_PASSWORD,
-                                   project=self.DEMO_PROJECT, role='_member_')
+        if users_page.is_user_present(self.DEMO_NAME):
+            users_page.delete_user(self.DEMO_NAME)
+        users_page.create_user(self.DEMO_NAME, password=self.DEMO_PASSWORD,
+                               project=self.DEMO_PROJECT, role='_member_')
 
         if self.home_pg.is_logged_in:
             self.home_pg.go_to_home_page()
