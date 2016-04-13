@@ -47,7 +47,8 @@ class BasePage(pageobject.PageObject):
         self.topbar.brand.click()
 
     def log_out(self):
-        self.topbar.user_dropdown_menu.click_on_logout()
+        with self.wait_for_page_load():
+            self.topbar.user_dropdown_menu.click_on_logout()
         return self.go_to_login_page()
 
     def go_to_help_page(self):
