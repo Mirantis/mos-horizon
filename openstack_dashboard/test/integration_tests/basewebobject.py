@@ -11,6 +11,7 @@
 #    under the License.
 import contextlib
 import unittest
+from contextlib import contextmanager
 
 import selenium.common.exceptions as Exceptions
 from selenium.webdriver.common import by
@@ -152,3 +153,19 @@ class BaseWebObject(unittest.TestCase):
     def wait_till_spinner_disappears(self):
         getter = lambda: self.driver.find_element(*self._spinner_locator)
         self.wait_till_element_disappears(getter)
+
+    @contextmanager
+    def wait_for_page_load(self):
+        try:
+            self._turn_off_implicit_wait()
+            old_page = self.driver.find_element_by_tag_name('html')
+
+            yield
+
+            def predicate(_):
+                new_page = self.driver.find_element_by_tag_name('html')
+                return old_page.id != new_page.id
+
+            self._wait_until(predicate, self.conf.selenium.page_timeout)
+        finally:
+            self._turn_on_implicit_wait()
