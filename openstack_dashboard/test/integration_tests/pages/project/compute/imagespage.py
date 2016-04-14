@@ -33,7 +33,7 @@ class ImagesTable(tables.TableRegion):
 
     CREATE_IMAGE_FORM_FIELDS = (
         "name", "description", "source_type", "image_url",
-        "image_file", "kernel", "ramdisk",
+        "image_file",  # "kernel", "ramdisk",
         "disk_format", "architecture", "minimum_disk",
         "minimum_ram", "is_public", "protected"
     )
