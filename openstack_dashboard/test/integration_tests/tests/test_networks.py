@@ -21,6 +21,7 @@ class TestNetworks(helpers.TestCase):
     NETWORK_NAME = helpers.gen_random_resource_name("network")
     SUBNET_NAME = helpers.gen_random_resource_name("subnet")
 
+    @decorators.skip_new_design
     def test_private_network_create(self):
         """tests the network creation and deletion functionalities:
         * creates a new private network and a new subnet associated with it

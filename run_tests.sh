@@ -34,6 +34,7 @@ function usage {
   echo "  --with-selenium          Run unit tests including Selenium tests"
   echo "  --selenium-headless      Run Selenium tests headless"
   echo "  --selenium-phantomjs     Run Selenium tests using phantomjs (headless)"
+  echo "  --skip-new-design        Skip tests which don't support new design"
   echo "  --integration            Run the integration tests (requires a running "
   echo "                           OpenStack environment)"
   echo "  --runserver              Run the Django development server for"
@@ -81,6 +82,7 @@ only_selenium=0
 with_selenium=0
 selenium_headless=0
 selenium_phantomjs=0
+skip_new_design=0
 integration=0
 testopts=""
 testargs=""
@@ -124,6 +126,7 @@ function process_option {
     --with-selenium) with_selenium=1;;
     --selenium-headless) selenium_headless=1;;
     --selenium-phantomjs) selenium_phantomjs=1;;
+    --skip-new-design) skip_new_design=1;;
     --integration) integration=1;;
     --docs) just_docs=1;;
     --runserver) runserver=1;;
@@ -354,6 +357,10 @@ function run_tests {
     export SELENIUM_PHANTOMJS=1
   fi
 
+  if [ $skip_new_design -eq 1 ]; then
+    export SKIP_NEW_DESIGN=1
+  fi
+
   if [ -z "$testargs" ]; then
      run_tests_all
   else
@@ -422,6 +429,10 @@ function run_integration_tests {
 
   if [ $selenium_phantomjs -eq 1 ]; then
     export SELENIUM_PHANTOMJS=1
+  fi
+
+  if [ $skip_new_design -eq 1 ]; then
+    export SKIP_NEW_DESIGN=1
   fi
 
   echo "Running Horizon integration tests..."

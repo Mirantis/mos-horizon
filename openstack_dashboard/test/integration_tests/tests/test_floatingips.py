@@ -13,7 +13,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from openstack_dashboard.test.integration_tests import helpers
+from openstack_dashboard.test.integration_tests import decorators, helpers
 from openstack_dashboard.test.integration_tests.regions import messages
 
 
@@ -41,6 +41,7 @@ class TestFloatingip(helpers.TestCase):
 class TestFloatingipAssociateDisassociate(helpers.TestCase):
     """Checks that the user is able to Associate/Disassociate floatingip."""
 
+    @decorators.skip_new_design
     def test_floatingip_associate_disassociate(self):
         instance_name = helpers.gen_random_resource_name('instance',
                                                          timestamp=False)

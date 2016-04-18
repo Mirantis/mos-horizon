@@ -10,13 +10,14 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from openstack_dashboard.test.integration_tests import helpers
+from openstack_dashboard.test.integration_tests import decorators, helpers
 from openstack_dashboard.test.integration_tests.regions import messages
 
 
 class TestSecuritygroup(helpers.TestCase):
     SECURITYGROUP_NAME = helpers.gen_random_resource_name("securitygroup")
 
+    @decorators.skip_new_design
     def test_securitygroup_create_delete(self):
         """tests the security group creation and deletion functionalities:
         * creates a new security group

@@ -10,7 +10,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from openstack_dashboard.test.integration_tests import helpers
+from openstack_dashboard.test.integration_tests import decorators, helpers
 from openstack_dashboard.test.integration_tests.regions import messages
 
 IMAGE_NAME = helpers.gen_random_resource_name("image")
@@ -129,6 +129,7 @@ class TestImagesAdvanced(helpers.TestCase):
         volumes_page.find_message_and_dismiss(messages.ERROR)
         self.assertTrue(volumes_page.is_volume_deleted(target_volume))
 
+    @decorators.skip_new_design
     def test_launch_instance_from_image(self):
         """This test case checks launch instance from image functionality:
             Steps:

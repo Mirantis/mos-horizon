@@ -20,6 +20,7 @@ from openstack_dashboard.test.integration_tests.regions import messages
 class TestRouters(helpers.TestCase):
     ROUTER_NAME = helpers.gen_random_resource_name("router")
 
+    @decorators.skip_new_design
     def test_router_create(self):
         """tests the router creation and deletion functionalities:
         * creates a new router for public network
