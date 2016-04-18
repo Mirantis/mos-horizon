@@ -12,7 +12,7 @@
 
 import random
 
-from openstack_dashboard.test.integration_tests import helpers
+from openstack_dashboard.test.integration_tests import decorators, helpers
 from openstack_dashboard.test.integration_tests.regions import messages
 
 
@@ -62,6 +62,7 @@ class TestSecuritygroup(helpers.TestCase):
         self.assertFalse(page.find_message_and_dismiss(messages.ERROR))
         self.assertFalse(page.is_port_present(self.RULE_PORT))
 
+    @decorators.skip_new_design
     def test_securitygroup_create_delete(self):
         """tests the security group creation and deletion functionalities:
         * creates a new security group

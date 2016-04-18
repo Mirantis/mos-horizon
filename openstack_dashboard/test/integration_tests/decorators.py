@@ -13,10 +13,11 @@
 import collections
 import functools
 import inspect
-
-import testtools
+import os
 
 from openstack_dashboard.test.integration_tests import config
+
+import testtools
 
 
 def _is_test_method_name(method):
@@ -137,3 +138,20 @@ def skip_because(**kwargs):
                               ", ".join([bug for bug in bugs]))
         return obj
     return actual_decoration
+
+
+def skip_new_design(obj):
+    if not os.environ.get('SKIP_NEW_DESIGN'):
+        return obj
+
+    if inspect.isclass(obj):
+        if not _is_test_cls(obj):
+            raise ValueError(NOT_TEST_OBJECT_ERROR_MSG)
+        skip = _mark_class_skipped
+
+    else:
+        if not _is_test_method_name(obj.__name__):
+            raise ValueError(NOT_TEST_OBJECT_ERROR_MSG)
+        skip = _mark_method_skipped
+
+    return skip(obj, "New design isn't supported")

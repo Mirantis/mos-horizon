@@ -42,6 +42,7 @@ class TestRouters(helpers.TestCase):
         self.assertFalse(routers_page.find_message_and_dismiss(messages.ERROR))
         self.assertFalse(routers_page.is_router_present(self.ROUTER_NAME))
 
+    @decorators.skip_new_design
     def test_router_create(self):
         """tests the router creation and deletion functionalities:
         * creates a new router for public network
