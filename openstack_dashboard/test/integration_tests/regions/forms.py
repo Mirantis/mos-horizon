@@ -9,10 +9,11 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
+
 import collections
+import contextlib
 import six
 
-from selenium.common import exceptions
 from selenium.webdriver.common import by
 import selenium.webdriver.support.ui as Support
 
@@ -224,6 +225,8 @@ class BaseFormRegion(baseregion.BaseRegion):
     _submit_locator = (by.By.CSS_SELECTOR, '*.btn.btn-primary')
     _cancel_locator = (by.By.CSS_SELECTOR, '*.btn.cancel')
     _default_form_locator = (by.By.CSS_SELECTOR, 'div.modal-dialog')
+    _fade_locator = (by.By.CLASS_NAME, 'modal-backdrop')
+    _modal_locator = (by.By.CLASS_NAME, 'modal')
 
     def __init__(self, driver, conf, src_elem=None):
         """In most cases forms can be located through _default_form_locator,
@@ -241,7 +244,8 @@ class BaseFormRegion(baseregion.BaseRegion):
         return self._get_element(*self._submit_locator)
 
     def submit(self):
-        self._submit_element.click()
+        with self.wait_till_form_disappears():
+            self._submit_element.click()
         self.wait_till_spinner_disappears()
 
     @property
@@ -249,7 +253,46 @@ class BaseFormRegion(baseregion.BaseRegion):
         return self._get_element(*self._cancel_locator)
 
     def cancel(self):
-        self._cancel_element.click()
+        with self.wait_till_form_disappears():
+            self._cancel_element.click()
+        self.wait_till_spinner_disappears()
+
+    @contextlib.contextmanager
+    def wait_till_form_disappears(self):
+        """Wait for opened form will be disappeared after interaction.
+
+        Form may be opened at page as modal or no (just a part of page).
+        When form is modal, it should wait for form will be disappeared after
+        submit or cancel, because form overlaps other page elements and
+        prevents their manipulation.
+
+        It should be sure that exactly current opened form is closed, because
+        after modal form another modal form may be opened (for ex. stack page).
+        Even if the form was opened twice, the second time it is another form
+        with another DOM-id, despite of DOM-selector is the same.
+
+        That's why element ids are used to detect opened form. The idea is very
+        simple: to get modal-element and fade-element ids while form is opened,
+        and after submit/cancel to check that modal-element and fade-element
+        with the same ids are absent.
+        """
+        with self.waits_disabled():  # form is either modal or no, don't wait
+            old_modal_id = self._get_element_id(*self._modal_locator)
+            old_fade_id = self._get_element_id(*self._fade_locator)
+
+        yield
+
+        if not (old_modal_id and old_fade_id):
+            return  # form isn't modal, exit
+
+        def predicate(_):
+            new_modal_id = self._get_element_id(*self._modal_locator)
+            new_fade_id = self._get_element_id(*self._fade_locator)
+            return (old_modal_id != new_modal_id) and \
+                   (old_fade_id != new_fade_id)
+
+        with self.waits_disabled():
+            self._wait_until(predicate)
 
 
 class FormRegion(BaseFormRegion):
@@ -450,16 +493,6 @@ class MetadataFormRegion(BaseFormRegion):
             field.send_keys(field_value)
         else:
             raise AttributeError("Unknown form field '{}'.".format(field_name))
-
-    def wait_till_spinner_disappears(self):
-        # No spinner is invoked after the 'Save' button click
-        # Will wait till the form itself disappears
-        try:
-            self.wait_till_element_disappears(self._form_getter)
-        except exceptions.StaleElementReferenceException:
-            # The form might be absent already by the time the first check
-            # occurs. So just suppress the exception here.
-            pass
 
 
 class ItemTextDescription(baseregion.BaseRegion):
