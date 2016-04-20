@@ -20,7 +20,7 @@ from selenium.webdriver.support import wait
 
 class BaseWebObject(unittest.TestCase):
     """Base class for all web objects."""
-    _spinner_locator = (by.By.CSS_SELECTOR, '.modal-body > .spinner')
+    _spinner_locator = (by.By.CLASS_NAME, 'spinner')
 
     def __init__(self, driver, conf):
         self.driver = driver
@@ -58,6 +58,13 @@ class BaseWebObject(unittest.TestCase):
                 return text in element.text
         except Exception:
             return False
+
+    def _get_element_id(self, *locator):
+        try:
+            return self.driver.find_element(*locator).id
+        except (Exceptions.NoSuchElementException,
+                Exceptions.ElementNotVisibleException):
+            return None
 
     def _get_element(self, *locator):
         return self.driver.find_element(*locator)

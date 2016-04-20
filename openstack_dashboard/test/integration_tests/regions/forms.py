@@ -9,8 +9,9 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
-import re
 
+import contextlib
+import re
 import six
 
 from selenium.webdriver.common import by
@@ -230,6 +231,8 @@ class BaseFormRegion(baseregion.BaseRegion):
     _submit_locator = (by.By.CSS_SELECTOR, '*.btn.btn-primary')
     _cancel_locator = (by.By.CSS_SELECTOR, '*.btn.cancel')
     _default_form_locator = (by.By.CSS_SELECTOR, 'div.modal-dialog')
+    _fade_locator = (by.By.CLASS_NAME, 'modal-backdrop')
+    _modal_locator = (by.By.CLASS_NAME, 'modal')
 
     def __init__(self, driver, conf, src_elem=None):
         """In most cases forms can be located through _default_form_locator,
@@ -246,7 +249,8 @@ class BaseFormRegion(baseregion.BaseRegion):
         return self._get_element(*self._submit_locator)
 
     def submit(self):
-        self._submit_element.click()
+        with self.wait_till_form_disappears():
+            self._submit_element.click()
         self.wait_till_spinner_disappears()
 
     @property
@@ -254,7 +258,46 @@ class BaseFormRegion(baseregion.BaseRegion):
         return self._get_element(*self._cancel_locator)
 
     def cancel(self):
-        self._cancel_element.click()
+        with self.wait_till_form_disappears():
+            self._cancel_element.click()
+        self.wait_till_spinner_disappears()
+
+    @contextlib.contextmanager
+    def wait_till_form_disappears(self):
+        """Wait for opened form will be disappeared after interaction.
+
+        Form may be opened at page as modal or no (just a part of page).
+        When form is modal, it should wait for form will be disappeared after
+        submit or cancel, because form overlaps other page elements and
+        prevents their manipulation.
+
+        It should be sure that exactly current opened form is closed, because
+        after modal form another modal form may be opened (for ex. stack page).
+        Even if the form was opened twice, the second time it is another form
+        with another DOM-id, despite of DOM-selector is the same.
+
+        That's why element ids are used to detect opened form. The idea is very
+        simple: to get modal-element and fade-element ids while form is opened,
+        and after submit/cancel to check that modal-element and fade-element
+        with the same ids are absent.
+        """
+        with self.waits_disabled():  # form is either modal or no, don't wait
+            old_modal_id = self._get_element_id(*self._modal_locator)
+            old_fade_id = self._get_element_id(*self._fade_locator)
+
+        yield
+
+        if not (old_modal_id and old_fade_id):
+            return  # form isn't modal, exit
+
+        def predicate(_):
+            new_modal_id = self._get_element_id(*self._modal_locator)
+            new_fade_id = self._get_element_id(*self._fade_locator)
+            return (old_modal_id != new_modal_id) and \
+                   (old_fade_id != new_fade_id)
+
+        with self.waits_disabled():
+            self._wait_until(predicate)
 
 
 class FormRegion(BaseFormRegion):
@@ -418,3 +461,60 @@ class DateFormRegion(BaseFormRegion):
 
     def _set_to_field(self, value):
         self._fill_field_element(value, self.to_date)
+
+
+class MetadataFormRegion(BaseFormRegion):
+
+    _input_fields = (by.By.CSS_SELECTOR, 'div.input-group')
+    _custom_input_field = (by.By.XPATH, "//input[@name='customItem']")
+    _custom_input_button = (by.By.CSS_SELECTOR, 'span.input-group-btn > .btn')
+    _submit_locator = (by.By.CSS_SELECTOR, '.modal-footer > .btn.btn-primary')
+    _cancel_locator = (by.By.CSS_SELECTOR, '.modal-footer > .btn.btn-default')
+
+    def _form_getter(self):
+        return self.driver.find_element(*self._default_form_locator)
+
+    @property
+    def custom_field_value(self):
+        return self._get_element(*self._custom_input_field)
+
+    @property
+    def add_button(self):
+        return self._get_element(*self._custom_input_button)
+
+    def add_custom_field(self, field_name, field_value):
+        self.custom_field_value.send_keys(field_name)
+        self.add_button.click()
+        for div in self._get_elements(*self._input_fields):
+            if div.text in field_name:
+                field = div.find_element(by.By.CSS_SELECTOR, 'input')
+                if not hasattr(self, field_name):
+                    self._dynamic_properties[field_name] = field
+        self.set_field_value(field_name, field_value)
+
+    def set_field_value(self, field_name, field_value):
+        if hasattr(self, field_name):
+            field = getattr(self, field_name)
+            field.send_keys(field_value)
+        else:
+            raise AttributeError("Unknown form field '{}'.".format(field_name))
+
+
+class ItemTextDescription(baseregion.BaseRegion):
+
+    _separator_locator = (by.By.CSS_SELECTOR, 'dl.dl-horizontal')
+    _key_locator = (by.By.CSS_SELECTOR, 'dt')
+    _value_locator = (by.By.CSS_SELECTOR, 'dd')
+
+    def __init__(self, driver, conf, src=None):
+        super(ItemTextDescription, self).__init__(driver, conf, src)
+
+    def get_content(self):
+        keys = []
+        values = []
+        for section in self._get_elements(*self._separator_locator):
+            keys.extend([x.text for x in
+                         section.find_elements(*self._key_locator)])
+            values.extend([x.text for x in
+                           section.find_elements(*self._value_locator)])
+        return dict(zip(keys, values))
