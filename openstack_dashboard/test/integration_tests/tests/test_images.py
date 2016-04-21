@@ -22,6 +22,27 @@ class TestImagesBasic(helpers.TestCase):
     def images_page(self):
         return self.home_pg.go_to_compute_imagespage()
 
+    def image_create(self, local_file=None):
+        images_page = self.images_page
+        if local_file:
+            images_page.create_image(self.IMAGE_NAME,
+                                     image_source_type='file',
+                                     image_file=local_file)
+        else:
+            images_page.create_image(self.IMAGE_NAME)
+        self.assertTrue(images_page.find_message_and_dismiss(messages.INFO))
+        self.assertFalse(images_page.find_message_and_dismiss(messages.ERROR))
+        self.assertTrue(images_page.is_image_present(self.IMAGE_NAME))
+        self.assertTrue(images_page.is_image_active(self.IMAGE_NAME))
+        return images_page
+
+    def image_delete(self, image_name):
+        images_page = self.images_page
+        images_page.delete_image(image_name)
+        self.assertTrue(images_page.find_message_and_dismiss(messages.SUCCESS))
+        self.assertFalse(images_page.find_message_and_dismiss(messages.ERROR))
+        self.assertFalse(images_page.is_image_present(self.IMAGE_NAME))
+
     def test_image_create_delete(self):
         """tests the image creation and deletion functionalities:
         * creates a new image from horizon.conf http_image
@@ -29,23 +50,20 @@ class TestImagesBasic(helpers.TestCase):
         * deletes the newly created image
         * verifies the image does not appear in the table after deletion
         """
-        self._create_image(IMAGE_NAME)
-        self._delete_image(IMAGE_NAME)
+        self.image_create()
+        self.image_delete(self.IMAGE_NAME)
 
-    def _create_image(self, image_name):
-        images_page = self.images_page
-        images_page.create_image(image_name)
-        self.assertTrue(images_page.find_message_and_dismiss(messages.SUCCESS))
-        self.assertFalse(images_page.find_message_and_dismiss(messages.ERROR))
-        self.assertTrue(images_page.is_image_present(image_name))
-        self.assertTrue(images_page.is_image_active(image_name))
-
-    def _delete_image(self, image_name):
-        images_page = self.images_page
-        images_page.delete_image(image_name)
-        self.assertTrue(images_page.find_message_and_dismiss(messages.SUCCESS))
-        self.assertFalse(images_page.find_message_and_dismiss(messages.ERROR))
-        self.assertFalse(images_page.is_image_present(image_name))
+    def test_image_create_delete_from_local_file(self):
+        """tests the image creation and deletion functionalities:
+        * downloads image from horizon.conf stated in http_image
+        * creates the image from the downloaded file
+        * verifies the image appears in the images table as active
+        * deletes the newly created image
+        * verifies the image does not appear in the table after deletion
+        """
+        with helpers.gen_temporary_file() as file_name:
+            self.image_create(local_file=file_name)
+            self.image_delete(self.IMAGE_NAME)
 
     def test_images_pagination(self):
         """This test checks images pagination
@@ -65,9 +83,9 @@ class TestImagesBasic(helpers.TestCase):
             10) Go to user settings page and restore 'Items Per Page'
         """
         first_image = "image_1"
-        self._create_image(first_image)
+        self.create_image(first_image)
         second_image = "image_2"
-        self._create_image(second_image)
+        self.create_image(second_image)
         third_image = self.CONFIG.image.images_list[0]
         items_per_page = 1
 
@@ -104,8 +122,116 @@ class TestImagesBasic(helpers.TestCase):
         settings_page.change_pagesize()
         settings_page.find_message_and_dismiss(messages.SUCCESS)
 
-        self._delete_image(second_image)
-        self._delete_image(first_image)
+        self.delete_image(second_image)
+        self.delete_image(first_image)
+
+    def test_update_image_metadata(self):
+        """Test update image metadata
+        * logs in as admin user
+        * creates image from locally downloaded file
+        * verifies the image appears in the images table as active
+        * invokes action 'Update Metadata' for the image
+        * adds custom filed 'metadata'
+        * adds value 'image' for the custom filed 'metadata'
+        * gets the actual description of the image
+        * verifies that custom filed is present in the image description
+        * deletes the image
+        * verifies the image does not appear in the table after deletion
+        """
+        new_metadata = {'metadata1': helpers.gen_random_resource_name("value"),
+                        'metadata2': helpers.gen_random_resource_name("value")}
+
+        with helpers.gen_temporary_file() as file_name:
+            images_page = self.image_create(local_file=file_name)
+            images_page.add_custom_metadata(self.IMAGE_NAME, new_metadata)
+            results = images_page.check_image_details(self.IMAGE_NAME,
+                                                      new_metadata)
+            self.image_delete(self.IMAGE_NAME)
+            self.assertSequenceTrue(results)
+
+    def test_remove_protected_image(self):
+        """tests that protected image is not deletable
+        * logs in as admin user
+        * creates image from locally downloaded file
+        * verifies the image appears in the images table as active
+        * marks 'Protected' checkbox
+        * verifies that edit action was successful
+        * verifies that delete action is not available in the list
+        * tries to delete the image
+        * verifies that exception is generated for the protected image
+        * unmarks 'Protected' checkbox
+        * deletes the image
+        * verifies the image does not appear in the table after deletion
+        """
+        with helpers.gen_temporary_file() as file_name:
+            images_page = self.image_create(local_file=file_name)
+            images_page.edit_image(self.IMAGE_NAME, protected=True)
+            self.assertTrue(
+                images_page.find_message_and_dismiss(messages.SUCCESS))
+
+            # Check that Delete action is not available in the action list.
+            # The below action will generate exception since the bind fails.
+            # But only ValueError with message below is expected here.
+            with self.assertRaisesRegexp(ValueError, 'Could not bind method'):
+                images_page.delete_image_via_row_action(self.IMAGE_NAME)
+
+            # Try to delete image. That should not be possible now.
+            images_page.delete_image(self.IMAGE_NAME)
+            self.assertFalse(
+                images_page.find_message_and_dismiss(messages.SUCCESS))
+            self.assertTrue(
+                images_page.find_message_and_dismiss(messages.ERROR))
+            self.assertTrue(images_page.is_image_present(self.IMAGE_NAME))
+
+            images_page.edit_image(self.IMAGE_NAME, protected=False)
+            self.assertTrue(
+                images_page.find_message_and_dismiss(messages.SUCCESS))
+            self.image_delete(self.IMAGE_NAME)
+
+    def test_edit_image_description_and_name(self):
+        """tests that image description is editable
+        * creates image from locally downloaded file
+        * verifies the image appears in the images table as active
+        * toggle edit action and adds some description
+        * verifies that edit action was successful
+        * verifies that new description is seen on image details page
+        * toggle edit action and changes image name
+        * verifies that edit action was successful
+        * verifies that image with new name is seen on the page
+        * deletes the image
+        * verifies the image does not appear in the table after deletion
+        """
+        new_description_text = helpers.gen_random_resource_name("description")
+        new_image_name = helpers.gen_random_resource_name("image")
+        with helpers.gen_temporary_file() as file_name:
+            images_page = self.image_create(local_file=file_name)
+            images_page.edit_image(self.IMAGE_NAME,
+                                   description=new_description_text)
+            self.assertTrue(
+                images_page.find_message_and_dismiss(messages.SUCCESS))
+            self.assertFalse(
+                images_page.find_message_and_dismiss(messages.ERROR))
+
+            results = images_page.check_image_details(self.IMAGE_NAME,
+                                                      {'Description':
+                                                       new_description_text})
+            self.assertSequenceTrue(results)
+
+            # Just go back to the images page and toggle edit again
+            images_page = self.images_page
+            images_page.edit_image(self.IMAGE_NAME,
+                                   new_name=new_image_name)
+            self.assertTrue(
+                images_page.find_message_and_dismiss(messages.SUCCESS))
+            self.assertFalse(
+                images_page.find_message_and_dismiss(messages.ERROR))
+
+            results = images_page.check_image_details(new_image_name,
+                                                      {'Name':
+                                                       new_image_name})
+            self.assertSequenceTrue(results)
+
+            self.image_delete(new_image_name)
 
 
 class TestImagesAdvanced(helpers.TestCase):
