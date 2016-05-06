@@ -19,6 +19,7 @@
 
 import logging
 import os
+from threading import RLock
 
 LOG = logging.getLogger(__name__)
 
@@ -114,6 +115,9 @@ class WebElementWrapper(WrapperFindOverride, webelement.WebElement):
 class WebDriverWrapper(WrapperFindOverride, WebDriver):
     """Wrapper for webdriver to return WebElementWrapper on find_element.
     """
+
+    execute_lock = RLock()
+
     def reload_request(self, locator, index):
         try:
             # element was found out via find_elements
@@ -125,3 +129,7 @@ class WebDriverWrapper(WrapperFindOverride, WebDriver):
             return web_el
         except (exceptions.NoSuchElementException, IndexError):
             return False
+
+    def execute(self, *args, **kwgs):
+        with self.execute_lock:
+            return super(WebDriverWrapper, self).execute(*args, **kwgs)

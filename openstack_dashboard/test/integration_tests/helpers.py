@@ -15,6 +15,9 @@ import logging
 import os
 from six import StringIO
 import socket
+import subprocess
+from threading import Thread
+from tempfile import mkdtemp
 import time
 import traceback
 import uuid
@@ -31,8 +34,9 @@ from openstack_dashboard.test.integration_tests import config
 from openstack_dashboard.test.integration_tests.pages import loginpage
 from openstack_dashboard.test.integration_tests.regions import messages
 
-LOGGER = logging.getLogger()
-LOGGER.setLevel(logging.DEBUG)
+ROOT_LOGGER = logging.getLogger()
+ROOT_LOGGER.setLevel(logging.DEBUG)
+LOGGER = logging.getLogger(__name__)
 ROOT_PATH = os.path.dirname(os.path.abspath(config.__file__))
 
 
@@ -65,6 +69,64 @@ def once_only(func):
             return func(*args, **kwgs)
 
     return wrapper
+
+
+class VideoRecorder(object):
+
+    def __init__(self, screencapture, polling_time=.2, frame_rate=2):
+        self._screencapture = screencapture
+        self._polling_time = polling_time
+        self._frame_rate = frame_rate
+        self._frame_path_tmpl = os.path.join(mkdtemp(), 'frame_%06d.png')
+
+        self.is_launched = False
+
+    def start(self):
+        if self.is_launched:
+            LOGGER.warn("video recording is already started")
+            return
+
+        def screencapture():
+            i = 0
+            while self.is_launched:
+                i += 1
+                try:
+                    self._screencapture(self._frame_path_tmpl % i)
+
+                except Exception as e:
+                    LOGGER.warn("Detect exception during screencapture. Video "
+                                "recording will be stopped. {}".format(e))
+                    self.is_launched = False
+
+                time.sleep(self._polling_time)
+
+        self.is_launched = True
+        self._t = Thread(target=screencapture)
+        self._t.daemon = True
+        self._t.start()
+
+    def stop(self):
+        if not self.is_launched:
+            LOGGER.warn("video recording is already stopped")
+            return
+
+        self.is_launched = False
+
+    def convert(self, dest_dir, file_name='movie'):
+        if subprocess.call("which ffmpeg > /dev/null 2>&1", shell=True):
+            LOGGER.warn("ffmpeg is not found, video converting is skipped")
+            return
+
+        dest_path = os.path.join(dest_dir, file_name)
+        frames_dir = os.path.dirname(self._frame_path_tmpl)
+        if not os.path.isdir(frames_dir):
+            raise IOError(
+                "Folder {!r} with frames is absent".format(frames_dir))
+
+        subprocess.check_output(
+            "ffmpeg -f image2 -r {} -i {} -vcodec mpeg4 -y {}.mp4 > /dev/null "
+            "2>&1".format(self._frame_rate, self._frame_path_tmpl, dest_path),
+            shell=True)
 
 
 class BaseTestCase(testtools.TestCase):
@@ -112,8 +174,13 @@ class BaseTestCase(testtools.TestCase):
         self.driver.implicitly_wait(self.CONFIG.selenium.implicit_wait)
         self.driver.set_page_load_timeout(
             self.CONFIG.selenium.page_timeout)
+
+        self.screencapture = VideoRecorder(self.driver.get_screenshot_as_file)
+        self.screencapture.start()
+
         self.addOnException(self._attach_page_source)
         self.addOnException(self._attach_screenshot)
+        self.addOnException(self._attach_video)
         self.addOnException(self._attach_browser_log)
         self.addOnException(self._attach_test_log)
 
@@ -123,14 +190,14 @@ class BaseTestCase(testtools.TestCase):
         """Configure log to capture test logs include selenium logs in order
         to attach them if test will be broken.
         """
-        LOGGER.handlers[:] = []  # clear other handlers to set target handler
+        ROOT_LOGGER.handlers[:] = []  # clear other handlers to set target handler
         self._log_buffer = StringIO()
         stream_handler = logging.StreamHandler(stream=self._log_buffer)
         stream_handler.setLevel(logging.DEBUG)
         formatter = logging.Formatter(
             '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
         stream_handler.setFormatter(formatter)
-        LOGGER.addHandler(stream_handler)
+        ROOT_LOGGER.addHandler(stream_handler)
 
     @property
     def _test_report_dir(self):
@@ -150,6 +217,11 @@ class BaseTestCase(testtools.TestCase):
         screen_path = os.path.join(self._test_report_dir, 'screenshot.png')
         with self.log_exception("Attach screenshot"):
             self.driver.get_screenshot_as_file(screen_path)
+
+    def _attach_video(self, exc_info):
+        with self.log_exception("Attach video"):
+            self.screencapture.stop()
+            self.screencapture.convert(self._test_report_dir)
 
     def _attach_browser_log(self, exc_info):
         browser_log_path = os.path.join(self._test_report_dir, 'browser.log')
@@ -204,6 +276,7 @@ class BaseTestCase(testtools.TestCase):
         return html_elem.get_attribute("innerHTML").encode("utf-8")
 
     def tearDown(self):
+        self.screencapture.stop()
         if os.environ.get('INTEGRATION_TESTS', False):
             self.driver.quit()
         if hasattr(self, 'vdisplay'):
