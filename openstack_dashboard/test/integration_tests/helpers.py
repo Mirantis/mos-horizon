@@ -14,7 +14,6 @@ import contextlib
 import logging
 import os
 from six import StringIO
-import socket
 import tempfile
 import time
 import traceback
@@ -24,6 +23,7 @@ from functools import wraps
 from selenium.webdriver.common import action_chains
 from selenium.webdriver.common import by
 from selenium.webdriver.common import keys
+from selenium.webdriver.remote.remote_connection import RemoteConnection
 import testtools
 import xvfbwrapper
 
@@ -35,6 +35,7 @@ from openstack_dashboard.test.integration_tests.regions import messages
 LOGGER = logging.getLogger()
 LOGGER.setLevel(logging.DEBUG)
 ROOT_PATH = os.path.dirname(os.path.abspath(config.__file__))
+RemoteConnection.set_timeout(60)
 
 
 def gen_random_resource_name(resource="", timestamp=True):
@@ -120,11 +121,7 @@ class BaseTestCase(testtools.TestCase):
             else:
                 self.vdisplay.xvfb_cmd.extend(args)
             self.vdisplay.start()
-        # Increase the default Python socket timeout from nothing
-        # to something that will cope with slow webdriver startup times.
-        # This *just* affects the communication between this test process
-        # and the webdriver.
-        socket.setdefaulttimeout(60)
+
         # Start the Selenium webdriver and setup configuration.
         desired_capabilities = dict(webdriver.desired_capabilities)
         desired_capabilities['loggingPrefs'] = {'browser': 'ALL'}
