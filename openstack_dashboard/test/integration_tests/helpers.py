@@ -13,10 +13,10 @@
 import contextlib
 import logging
 import os
+from shutil import copyfile
+import signal
 from six import StringIO
 import subprocess
-from threading import Thread
-from tempfile import mkdtemp
 import tempfile
 import time
 import traceback
@@ -97,6 +97,8 @@ def ignore_skip(func):
 
     return wrapper
 
+DISP_NUM = [None]
+
 
 class AssertsMixin(object):
 
@@ -109,60 +111,27 @@ class AssertsMixin(object):
 
 class VideoRecorder(object):
 
-    def __init__(self, screencapture, polling_time=.2, frame_rate=2):
-        self._screencapture = screencapture
-        self._polling_time = polling_time
-        self._frame_rate = frame_rate
-        self._frame_path_tmpl = os.path.join(mkdtemp(), 'frame_%06d.png')
-
+    def __init__(self):
         self.is_launched = False
+        self.file_path = tempfile.mktemp() + '.mp4'
+        screen_size = subprocess.check_output('xdpyinfo | grep dimensions',
+                                              shell=True).split()[1]
+        self._args = ['ffmpeg', '-video_size', screen_size, '-framerate', '15',
+                      '-f', 'x11grab', '-i', ':{}'.format(DISP_NUM[0]),
+                      self.file_path]
 
     def start(self):
-        if self.is_launched:
-            LOGGER.warn("video recording is already started")
-            return
-
-        def screencapture():
-            i = 0
-            while self.is_launched:
-                i += 1
-                try:
-                    self._screencapture(self._frame_path_tmpl % i)
-
-                except Exception as e:
-                    LOGGER.warn("Detect exception during screencapture. Video "
-                                "recording will be stopped. {}".format(e))
-                    self.is_launched = False
-
-                time.sleep(self._polling_time)
-
-        self.is_launched = True
-        self._t = Thread(target=screencapture)
-        self._t.daemon = True
-        self._t.start()
+        if not self.is_launched:
+            FNULL = open(os.devnull, 'w')
+            self._popen = subprocess.Popen(self._args,
+                                           stdout=FNULL, stderr=FNULL)
+            self.is_launched = True
 
     def stop(self):
-        if not self.is_launched:
-            LOGGER.warn("video recording is already stopped")
-            return
-
-        self.is_launched = False
-
-    def convert(self, dest_dir, file_name='movie'):
-        if subprocess.call("which ffmpeg > /dev/null 2>&1", shell=True):
-            LOGGER.warn("ffmpeg is not found, video converting is skipped")
-            return
-
-        dest_path = os.path.join(dest_dir, file_name)
-        frames_dir = os.path.dirname(self._frame_path_tmpl)
-        if not os.path.isdir(frames_dir):
-            raise IOError(
-                "Folder {!r} with frames is absent".format(frames_dir))
-
-        subprocess.check_output(
-            "ffmpeg -f image2 -r {} -i {} -vcodec mpeg4 -y {}.mp4 > /dev/null "
-            "2>&1".format(self._frame_rate, self._frame_path_tmpl, dest_path),
-            shell=True)
+        if self.is_launched:
+            self._popen.send_signal(signal.SIGINT)
+            self._popen.communicate()
+            self.is_launched = False
 
 
 class BaseTestCase(testtools.TestCase):
@@ -193,6 +162,7 @@ class BaseTestCase(testtools.TestCase):
                 self.vdisplay.extra_xvfb_args.extend(args)
             else:
                 self.vdisplay.xvfb_cmd.extend(args)
+            DISP_NUM[0] = self.vdisplay._get_next_unused_display()
             self.vdisplay.start()
 
         # Start the Selenium webdriver and setup configuration.
@@ -207,7 +177,7 @@ class BaseTestCase(testtools.TestCase):
         self.driver.set_page_load_timeout(
             self.CONFIG.selenium.page_timeout)
 
-        self.screencapture = VideoRecorder(self.driver.get_screenshot_as_file)
+        self.screencapture = VideoRecorder()
         self.screencapture.start()
 
         self.addOnException(self._attach_page_source)
@@ -257,7 +227,8 @@ class BaseTestCase(testtools.TestCase):
     def _attach_video(self, exc_info):
         with self.log_exception("Attach video"):
             self.screencapture.stop()
-            self.screencapture.convert(self._test_report_dir)
+            copyfile(self.screencapture.file_path,
+                     os.path.join(self._test_report_dir, 'video.mp4'))
 
     @ignore_skip
     def _attach_browser_log(self, exc_info):
