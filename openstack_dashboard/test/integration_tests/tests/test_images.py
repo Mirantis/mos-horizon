@@ -82,17 +82,22 @@ class TestImagesBasic(helpers.TestCase):
             9) Click 'Prev' and check results (should be the same as for step5)
             10) Go to user settings page and restore 'Items Per Page'
         """
-        default_image_list = self.CONFIG.image.images_list
+        first_image = "image_1"
+        self._create_image(first_image)
+        second_image = "image_2"
+        self._create_image(second_image)
+        third_image = self.CONFIG.image.images_list[0]
         items_per_page = 1
+
         first_page_definition = {'Next': True, 'Prev': False,
                                  'Count': items_per_page,
-                                 'Names': [default_image_list[0]]}
+                                 'Names': [first_image]}
         second_page_definition = {'Next': True, 'Prev': True,
                                   'Count': items_per_page,
-                                  'Names': [default_image_list[1]]}
+                                  'Names': [second_image]}
         third_page_definition = {'Next': False, 'Prev': True,
                                  'Count': items_per_page,
-                                 'Names': [default_image_list[2]]}
+                                 'Names': [third_image]}
 
         settings_page = self.home_pg.go_to_settings_usersettingspage()
         settings_page.change_pagesize(items_per_page)
