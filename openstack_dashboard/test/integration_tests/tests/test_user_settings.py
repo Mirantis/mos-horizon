@@ -31,53 +31,41 @@ class TestDashboardHelp(helpers.TestCase):
         self.home_pg.switch_window()
 
 
-class TestPasswordChange(helpers.TestCase):
-    NEW_PASSWORD = "123"
+class TestPasswordChange(helpers.AdminTestCase):
+    NEW_PASSWORD = "admin123"
 
-    def _reset_password(self):
+    def setUp(self):
+        self._username = helpers.gen_random_resource_name("user")
+        self._password = 'qwerty123'
+
+        super(TestPasswordChange, self).setUp()
+
+        users_page = self.home_pg.go_to_identity_userspage()
+        users_page.create_user(self._username, password=self._password,
+                               project=self.HOME_PROJECT, role='_member_')
+        self.home_pg.log_out()
+
+        self.home_pg = self.login_pg.login(user=self._username,
+                                           password=self._password)
         passwordchange_page = self.home_pg.go_to_settings_changepasswordpage()
-        passwordchange_page.reset_to_default_password(self.NEW_PASSWORD)
-
-    def _login(self):
-        self.login_pg.login()
-        self.assertTrue(self.home_pg.is_logged_in,
-                        "Failed to login with default password")
+        passwordchange_page.change_password(self._password, self.NEW_PASSWORD)
 
     def test_password_change(self):
         """Changes the password, verifies it was indeed changed and resets to
         default password.
         """
-        passwordchange_page = self.home_pg.go_to_settings_changepasswordpage()
-
-        try:
-            passwordchange_page.change_password(self.TEST_PASSWORD,
-                                                self.NEW_PASSWORD)
-
-            self.home_pg = self.login_pg.login(user=self.TEST_USER_NAME,
-                                               password=self.NEW_PASSWORD)
-            self.assertTrue(self.home_pg.is_logged_in,
-                            "Failed to login with new password")
-        finally:
-            self._reset_password()
-            self._login()
+        self.home_pg = self.login_pg.login(user=self._username,
+                                           password=self.NEW_PASSWORD)
+        self.assertTrue(self.home_pg.is_logged_in,
+                        "Failed to login with new password")
 
     def test_show_message_after_logout(self):
         """Ensure an informational message is shown on the login page after the
         user is logged out.
         """
-        passwordchange_page = self.home_pg.go_to_settings_changepasswordpage()
-
-        try:
-            passwordchange_page.change_password(self.TEST_PASSWORD,
-                                                self.NEW_PASSWORD)
-            self.assertTrue(
-                self.login_pg.is_logout_reason_displayed(),
-                "The logout reason message was not found on the login page")
-        finally:
-            self.login_pg.login(user=self.TEST_USER_NAME,
-                                password=self.NEW_PASSWORD)
-            self._reset_password()
-            self._login()
+        self.assertTrue(
+            self.login_pg.is_logout_reason_displayed(),
+            "The logout reason message was not found on the login page")
 
 
 class TestUserSettings(helpers.TestCase):
