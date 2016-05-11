@@ -29,18 +29,23 @@ class TestImagesBasic(helpers.TestCase):
         * deletes the newly created image
         * verifies the image does not appear in the table after deletion
         """
+        self._create_image(IMAGE_NAME)
+        self._delete_image(IMAGE_NAME)
+
+    def _create_image(self, image_name):
         images_page = self.images_page
-
-        images_page.create_image(IMAGE_NAME)
+        images_page.create_image(image_name)
         self.assertTrue(images_page.find_message_and_dismiss(messages.SUCCESS))
         self.assertFalse(images_page.find_message_and_dismiss(messages.ERROR))
-        self.assertTrue(images_page.is_image_present(IMAGE_NAME))
-        self.assertTrue(images_page.is_image_active(IMAGE_NAME))
+        self.assertTrue(images_page.is_image_present(image_name))
+        self.assertTrue(images_page.is_image_active(image_name))
 
-        images_page.delete_image(IMAGE_NAME)
+    def _delete_image(self, image_name):
+        images_page = self.images_page
+        images_page.delete_image(image_name)
         self.assertTrue(images_page.find_message_and_dismiss(messages.SUCCESS))
         self.assertFalse(images_page.find_message_and_dismiss(messages.ERROR))
-        self.assertFalse(images_page.is_image_present(IMAGE_NAME))
+        self.assertFalse(images_page.is_image_present(image_name))
 
     def test_images_pagination(self):
         """This test checks images pagination
@@ -59,17 +64,22 @@ class TestImagesBasic(helpers.TestCase):
             9) Click 'Prev' and check results (should be the same as for step5)
             10) Go to user settings page and restore 'Items Per Page'
         """
-        default_image_list = self.CONFIG.image.images_list
+        first_image = "image_1"
+        self._create_image(first_image)
+        second_image = "image_2"
+        self._create_image(second_image)
+        third_image = self.CONFIG.image.images_list[0]
         items_per_page = 1
+
         first_page_definition = {'Next': True, 'Prev': False,
                                  'Count': items_per_page,
-                                 'Names': [default_image_list[0]]}
+                                 'Names': [first_image]}
         second_page_definition = {'Next': True, 'Prev': True,
                                   'Count': items_per_page,
-                                  'Names': [default_image_list[1]]}
+                                  'Names': [second_image]}
         third_page_definition = {'Next': False, 'Prev': True,
                                  'Count': items_per_page,
-                                 'Names': [default_image_list[2]]}
+                                 'Names': [third_image]}
 
         settings_page = self.home_pg.go_to_settings_usersettingspage()
         settings_page.change_pagesize(items_per_page)
@@ -93,6 +103,9 @@ class TestImagesBasic(helpers.TestCase):
         settings_page = self.home_pg.go_to_settings_usersettingspage()
         settings_page.change_pagesize()
         settings_page.find_message_and_dismiss(messages.SUCCESS)
+
+        self._delete_image(second_image)
+        self._delete_image(first_image)
 
 
 class TestImagesAdvanced(helpers.TestCase):
