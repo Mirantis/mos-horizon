@@ -72,6 +72,17 @@ def once_only(func):
     return wrapper
 
 
+def ignore_skip(func):
+
+    @wraps(func)
+    def wrapper(self, exc_info):
+        if exc_info[0].__name__ == 'SkipTest':
+            return
+        return func(self, exc_info)
+
+    return wrapper
+
+
 class VideoRecorder(object):
 
     def __init__(self, screencapture, polling_time=.2, frame_rate=2):
@@ -199,27 +210,32 @@ class BaseTestCase(testtools.TestCase):
     @property
     def _test_report_dir(self):
         report_dir = os.path.join(ROOT_PATH, 'test_reports',
-                                  self._testMethodName)
+                                  '{}.{}'.format(self.__class__.__name__,
+                                                 self._testMethodName))
         if not os.path.isdir(report_dir):
             os.makedirs(report_dir)
         return report_dir
 
+    @ignore_skip
     def _attach_page_source(self, exc_info):
         source_path = os.path.join(self._test_report_dir, 'page.html')
         with self.log_exception("Attach page source"):
             with open(source_path, 'w') as f:
                 f.write(self._get_page_html_source())
 
+    @ignore_skip
     def _attach_screenshot(self, exc_info):
         screen_path = os.path.join(self._test_report_dir, 'screenshot.png')
         with self.log_exception("Attach screenshot"):
             self.driver.get_screenshot_as_file(screen_path)
 
+    @ignore_skip
     def _attach_video(self, exc_info):
         with self.log_exception("Attach video"):
             self.screencapture.stop()
             self.screencapture.convert(self._test_report_dir)
 
+    @ignore_skip
     def _attach_browser_log(self, exc_info):
         browser_log_path = os.path.join(self._test_report_dir, 'browser.log')
         with self.log_exception("Attach browser log"):
@@ -227,6 +243,7 @@ class BaseTestCase(testtools.TestCase):
                 f.write(
                     self._unwrap_browser_log(self.driver.get_log('browser')))
 
+    @ignore_skip
     def _attach_test_log(self, exc_info):
         test_log_path = os.path.join(self._test_report_dir, 'test.log')
         with self.log_exception("Attach test log"):
