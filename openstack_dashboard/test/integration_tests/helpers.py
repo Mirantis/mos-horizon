@@ -97,7 +97,8 @@ def ignore_skip(func):
 
     return wrapper
 
-DISP_NUM = [None]
+
+DISP_NUM = ['0.0']
 
 
 class AssertsMixin(object):
@@ -173,6 +174,8 @@ class BaseTestCase(testtools.TestCase):
         )
         if self.CONFIG.selenium.maximize_browser:
             self.driver.maximize_window()
+            if os.environ.get('SELENIUM_HEADLESS', False):
+                self.driver.set_window_size('1920', '1080')
         self.driver.implicitly_wait(self.CONFIG.selenium.implicit_wait)
         self.driver.set_page_load_timeout(
             self.CONFIG.selenium.page_timeout)
@@ -264,17 +267,6 @@ class BaseTestCase(testtools.TestCase):
                 return log.encode('utf-8')
         return rec(_log)
 
-    def zoom_out(self, times=3):
-        """Zooming out prevents different elements being driven out of xvfb
-        viewport (which in Selenium>=2.50.1 prevents interaction with them.
-        """
-        html = self.driver.find_element(by.By.TAG_NAME, 'html')
-        html.send_keys(keys.Keys.NULL)
-        zoom_out_keys = (keys.Keys.SUBTRACT,) * times
-        action_chains.ActionChains(self.driver).key_down(
-            keys.Keys.CONTROL).send_keys(*zoom_out_keys).key_up(
-            keys.Keys.CONTROL).perform()
-
     def _get_page_html_source(self):
         """Gets html page source.
 
@@ -311,7 +303,6 @@ class TestCase(BaseTestCase, AssertsMixin):
         super(TestCase, self).setUp()
         self.login_pg = loginpage.LoginPage(self.driver, self.CONFIG)
         self.login_pg.go_to_login_page()
-        self.zoom_out()
 
         self.create_demo_user()
 
