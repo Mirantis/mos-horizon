@@ -39,6 +39,7 @@ ROOT_LOGGER = logging.getLogger()
 ROOT_LOGGER.setLevel(logging.DEBUG)
 LOGGER = logging.getLogger(__name__)
 ROOT_PATH = os.path.dirname(os.path.abspath(config.__file__))
+IS_SELENIUM_HEADLESS = os.environ.get('SELENIUM_HEADLESS', False)
 RemoteConnection.set_timeout(60)
 
 
@@ -84,32 +85,78 @@ def ignore_skip(func):
     return wrapper
 
 
-DISP_NUM = ['0.0']
+def screen_size():
+    if IS_SELENIUM_HEADLESS:
+        return (1920, 1080)
+
+    if not subprocess.call('which xdpyinfo > /dev/null 2>&1', shell=True):
+        return subprocess.check_output(
+            'xdpyinfo | grep dimensions', shell=True).split()[1].split('x')
+
+    else:
+        default = (1024, 768)
+        LOGGER.error(
+            "can't define screen resolution, use default {!r}".format(default))
+        return default
+
+
+def if_ffmpeg(func):
+
+    @wraps(func)
+    def wrapper(self, *args, **kwgs):
+        if self._no_ffmpeg:
+            return
+        return func(self, *args, **kwgs)
+
+    return wrapper
+
+
+DISP_NUM = [':0.0']
 
 
 class VideoRecorder(object):
 
     def __init__(self):
+        self._no_ffmpeg = False
         self.is_launched = False
         self.file_path = mktemp() + '.mp4'
-        screen_size = subprocess.check_output('xdpyinfo | grep dimensions',
-                                              shell=True).split()[1]
-        self._args = ['ffmpeg', '-video_size', screen_size, '-framerate', '15',
-                      '-f', 'x11grab', '-i', ':{}'.format(DISP_NUM[0]),
+        self._args = ['ffmpeg', '-video_size', '{}x{}'.format(*screen_size()),
+                      '-framerate', '15', '-f', 'x11grab', '-i', DISP_NUM[0],
                       self.file_path]
 
+    @if_ffmpeg
     def start(self):
-        if not self.is_launched:
-            FNULL = open(os.devnull, 'w')
-            self._popen = subprocess.Popen(self._args,
-                                           stdout=FNULL, stderr=FNULL)
-            self.is_launched = True
-
-    def stop(self):
         if self.is_launched:
-            self._popen.send_signal(signal.SIGINT)
-            self._popen.communicate()
-            self.is_launched = False
+            LOGGER.warn("recording is already launched")
+            return
+
+        if subprocess.call('which ffmpeg > /dev/null 2>&1', shell=True):
+            LOGGER.error("ffmpeg isn't installed")
+            self._no_ffmpeg = True
+            return
+
+        FNULL = open(os.devnull, 'w')
+        LOGGER.info('record video with {!r}'.format(' '.join(self._args)))
+        self._popen = subprocess.Popen(self._args, stdout=FNULL, stderr=FNULL)
+        self.is_launched = True
+
+    @if_ffmpeg
+    def stop(self):
+        if not self.is_launched:
+            LOGGER.warn("recording isn't launched")
+            return
+
+        self._popen.send_signal(signal.SIGINT)
+        self._popen.communicate()
+        self.is_launched = False
+
+    @if_ffmpeg
+    def clear(self):
+        if not os.path.isfile(self.file_path):
+            LOGGER.warn("{!r} is absent".format(self.file_path))
+            return
+
+        os.remove(self.file_path)
 
 
 class BaseTestCase(testtools.TestCase):
@@ -124,8 +171,9 @@ class BaseTestCase(testtools.TestCase):
             raise self.skipException(msg)
 
         # Start a virtual display server for running the tests headless.
-        if os.environ.get('SELENIUM_HEADLESS', False):
-            self.vdisplay = xvfbwrapper.Xvfb(width=1920, height=1080)
+        if IS_SELENIUM_HEADLESS:
+            width, height = screen_size()
+            self.vdisplay = xvfbwrapper.Xvfb(width=width, height=height)
             args = []
 
             # workaround for memory leak in Xvfb taken from:
@@ -140,8 +188,8 @@ class BaseTestCase(testtools.TestCase):
                 self.vdisplay.extra_xvfb_args.extend(args)
             else:
                 self.vdisplay.xvfb_cmd.extend(args)
-            DISP_NUM[0] = self.vdisplay._get_next_unused_display()
             self.vdisplay.start()
+            DISP_NUM[0] = self.vdisplay.xvfb_cmd[1]
 
         # Start the Selenium webdriver and setup configuration.
         desired_capabilities = dict(webdriver.desired_capabilities)
@@ -149,10 +197,12 @@ class BaseTestCase(testtools.TestCase):
         self.driver = webdriver.WebDriverWrapper(
             desired_capabilities=desired_capabilities
         )
+
         if self.CONFIG.selenium.maximize_browser:
             self.driver.maximize_window()
-            if os.environ.get('SELENIUM_HEADLESS', False):
-                self.driver.set_window_size('1920', '1080')
+            if IS_SELENIUM_HEADLESS:
+                self.driver.set_window_size(*screen_size())
+
         self.driver.implicitly_wait(self.CONFIG.selenium.implicit_wait)
         self.driver.set_page_load_timeout(
             self.CONFIG.selenium.page_timeout)
@@ -207,6 +257,12 @@ class BaseTestCase(testtools.TestCase):
     def _attach_video(self, exc_info):
         with self.log_exception("Attach video"):
             self.screencapture.stop()
+
+            if not os.path.isfile(self.screencapture.file_path):
+                LOGGER.warn("can't copy video from {!r}".format(
+                    self.screencapture.file_path))
+                return
+
             copyfile(self.screencapture.file_path,
                      os.path.join(self._test_report_dir, 'video.mp4'))
 
@@ -255,10 +311,14 @@ class BaseTestCase(testtools.TestCase):
 
     def tearDown(self):
         self.screencapture.stop()
+        self.screencapture.clear()
+
         if os.environ.get('INTEGRATION_TESTS', False):
             self.driver.quit()
-        if hasattr(self, 'vdisplay'):
+
+        if IS_SELENIUM_HEADLESS:
             self.vdisplay.stop()
+
         super(BaseTestCase, self).tearDown()
 
 
