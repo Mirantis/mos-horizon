@@ -43,3 +43,5 @@ class MessageRegion(baseregion.BaseRegion):
 
     def close(self):
         self._get_element(*self._close_locator).click()
+        self.wait_till_element_disappears(
+            lambda: self.driver.find_element(*self._default_src_locator))
