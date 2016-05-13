@@ -191,6 +191,9 @@ class BaseTestCase(testtools.TestCase):
             self.vdisplay.start()
             DISP_NUM[0] = self.vdisplay.xvfb_cmd[1]
 
+        self.screencapture = VideoRecorder()
+        self.screencapture.start()
+
         # Start the Selenium webdriver and setup configuration.
         desired_capabilities = dict(webdriver.desired_capabilities)
         desired_capabilities['loggingPrefs'] = {'browser': 'ALL'}
@@ -206,9 +209,6 @@ class BaseTestCase(testtools.TestCase):
         self.driver.implicitly_wait(self.CONFIG.selenium.implicit_wait)
         self.driver.set_page_load_timeout(
             self.CONFIG.selenium.page_timeout)
-
-        self.screencapture = VideoRecorder()
-        self.screencapture.start()
 
         self.addOnException(self._attach_page_source)
         self.addOnException(self._attach_screenshot)
@@ -310,11 +310,11 @@ class BaseTestCase(testtools.TestCase):
         return html_elem.get_attribute("innerHTML").encode("utf-8")
 
     def tearDown(self):
-        self.screencapture.stop()
-        self.screencapture.clear()
-
         if os.environ.get('INTEGRATION_TESTS', False):
             self.driver.quit()
+
+        self.screencapture.stop()
+        self.screencapture.clear()
 
         if IS_SELENIUM_HEADLESS:
             self.vdisplay.stop()
