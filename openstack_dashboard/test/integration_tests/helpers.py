@@ -20,6 +20,7 @@ import subprocess
 import tempfile
 import time
 import traceback
+import types
 import uuid
 from functools import wraps
 
@@ -40,6 +41,7 @@ ROOT_LOGGER.setLevel(logging.DEBUG)
 LOGGER = logging.getLogger(__name__)
 ROOT_PATH = os.path.dirname(os.path.abspath(config.__file__))
 IS_SELENIUM_HEADLESS = os.environ.get('SELENIUM_HEADLESS', False)
+CONF = config.get_config()
 RemoteConnection.set_timeout(60)
 
 
@@ -77,13 +79,26 @@ def gen_temporary_file(name='', suffix='.qcow2', size=10485760):
 
 
 def once_only(func):
-    called_funcs = []
+    called_funcs = {}
 
     @wraps(func)
     def wrapper(*args, **kwgs):
         if func.__name__ not in called_funcs:
-            called_funcs.append(func.__name__)
-            return func(*args, **kwgs)
+            result = obj = func(*args, **kwgs)
+            if isinstance(obj, types.GeneratorType):
+
+                def gi_wrapper():
+                    while True:
+                        result = obj.next()
+                        called_funcs[func.__name__] = result
+                        yield result
+
+                return gi_wrapper()
+            else:
+                called_funcs[func.__name__] = result
+                return result
+        else:
+            return called_funcs[func.__name__]
 
     return wrapper
 
@@ -125,7 +140,7 @@ def if_ffmpeg(func):
     return wrapper
 
 
-DISP_NUM = [':0.0']
+DISP_NUM = ['0.0']
 
 
 class AssertsMixin(object):
@@ -144,8 +159,8 @@ class VideoRecorder(object):
         self.is_launched = False
         self.file_path = tempfile.mktemp() + '.mp4'
         self._args = ['ffmpeg', '-video_size', '{}x{}'.format(*screen_size()),
-                      '-framerate', '15', '-f', 'x11grab', '-i', DISP_NUM[0],
-                      self.file_path]
+                      '-framerate', '15', '-f', 'x11grab', '-i',
+                      ':{}'.format(DISP_NUM[0]), self.file_path]
 
     @if_ffmpeg
     def start(self):
@@ -158,9 +173,9 @@ class VideoRecorder(object):
             self._no_ffmpeg = True
             return
 
-        FNULL = open(os.devnull, 'w')
+        fnull = open(os.devnull, 'w')
         LOGGER.info('record video with {!r}'.format(' '.join(self._args)))
-        self._popen = subprocess.Popen(self._args, stdout=FNULL, stderr=FNULL)
+        self._popen = subprocess.Popen(self._args, stdout=fnull, stderr=fnull)
         self.is_launched = True
 
     @if_ffmpeg
@@ -182,76 +197,92 @@ class VideoRecorder(object):
         os.remove(self.file_path)
 
 
+def video_recorder():
+    recorder = VideoRecorder()
+    recorder.start()
+
+    yield recorder
+
+    LOGGER.info("Clean up screen capture")
+    recorder.stop()
+    recorder.clear()
+
+
+def web_driver():
+    desired_capabilities = dict(webdriver.desired_capabilities)
+    desired_capabilities['loggingPrefs'] = {'browser': 'ALL'}
+
+    driver = webdriver.WebDriverWrapper(
+        desired_capabilities=desired_capabilities)
+
+    if CONF.selenium.maximize_browser:
+        driver.maximize_window()
+        if IS_SELENIUM_HEADLESS:
+            driver.set_window_size(*screen_size())
+
+    driver.implicitly_wait(CONF.selenium.implicit_wait)
+    driver.set_page_load_timeout(CONF.selenium.page_timeout)
+
+    yield driver
+
+    LOGGER.info('Clean up web driver')
+    driver.quit()
+
+
+def vdisplay():
+    width, height = screen_size()
+    vdisplay = xvfbwrapper.Xvfb(width=width, height=height)
+    # workaround for memory leak in Xvfb taken from:
+    # http://blog.jeffterrace.com/2012/07/xvfb-memory-leak-workaround.html
+    # and disables X access control
+    args = ["-noreset", "-ac"]
+
+    if hasattr(vdisplay, 'extra_xvfb_args'):
+        vdisplay.extra_xvfb_args.extend(args)  # xvfbwrapper 0.2.8 or newer
+    else:
+        vdisplay.xvfb_cmd.extend(args)
+
+    vdisplay.start()
+    DISP_NUM[0] = vdisplay.new_display
+
+    yield vdisplay
+
+    LOGGER.info('Clean up xvfb')
+    vdisplay.stop()
+
+
 class BaseTestCase(testtools.TestCase):
 
-    CONFIG = config.get_config()
+    CONFIG = CONF
+
+    def inject(self, func, *args, **kwgs):
+        result = obj = func(*args, **kwgs)
+        if isinstance(obj, types.GeneratorType):
+            result = obj.next()
+
+            def cleanup():
+                try:
+                    obj.next()
+                except StopIteration:
+                    pass
+
+            self.addCleanup(cleanup)
+        return result
 
     def setUp(self):
         self._configure_log()
 
+        # TODO(schipiga): remove that code. Launch logic must be above.
         if not os.environ.get('INTEGRATION_TESTS', False):
-            msg = "The INTEGRATION_TESTS env variable is not set."
-            raise self.skipException(msg)
+            raise self.skipException(
+                "The INTEGRATION_TESTS env variable is not set.")
 
         # Start a virtual display server for running the tests headless.
         if IS_SELENIUM_HEADLESS:
-            width, height = screen_size()
-            self.vdisplay = xvfbwrapper.Xvfb(width=width, height=height)
-            args = []
+            self.vdisplay = self.inject(vdisplay)
 
-            # workaround for memory leak in Xvfb taken from:
-            # http://blog.jeffterrace.com/2012/07/xvfb-memory-leak-workaround.html
-            args.append("-noreset")
-
-            # disables X access control
-            args.append("-ac")
-
-            if hasattr(self.vdisplay, 'extra_xvfb_args'):
-                # xvfbwrapper 0.2.8 or newer
-                self.vdisplay.extra_xvfb_args.extend(args)
-            else:
-                self.vdisplay.xvfb_cmd.extend(args)
-
-            self.vdisplay.start()
-
-            def cleanup_vdisplay():
-                LOGGER.info('Clean up xvfb')
-                self.vdisplay.stop()
-
-            self.addCleanup(cleanup_vdisplay)
-
-            DISP_NUM[0] = self.vdisplay.xvfb_cmd[1]
-
-        self.screencapture = VideoRecorder()
-        self.screencapture.start()
-
-        def cleanup_screencapture():
-            LOGGER.info("Clean up screen capture")
-            self.screencapture.stop()
-            self.screencapture.clear()
-
-        self.addCleanup(cleanup_screencapture)
-
-        # Start the Selenium webdriver and setup configuration.
-        desired_capabilities = dict(webdriver.desired_capabilities)
-        desired_capabilities['loggingPrefs'] = {'browser': 'ALL'}
-        self.driver = webdriver.WebDriverWrapper(
-            desired_capabilities=desired_capabilities)
-
-        def cleanup_driver():
-            LOGGER.info('Clean up web driver')
-            self.driver.quit()
-
-        self.addCleanup(cleanup_driver)
-
-        if self.CONFIG.selenium.maximize_browser:
-            self.driver.maximize_window()
-            if IS_SELENIUM_HEADLESS:
-                self.driver.set_window_size(*screen_size())
-
-        self.driver.implicitly_wait(self.CONFIG.selenium.implicit_wait)
-        self.driver.set_page_load_timeout(
-            self.CONFIG.selenium.page_timeout)
+        self.video_recorder = self.inject(video_recorder)
+        self.driver = self.inject(web_driver)
 
         self.addOnException(self._attach_page_source)
         self.addOnException(self._attach_screenshot)
@@ -299,14 +330,14 @@ class BaseTestCase(testtools.TestCase):
     @ignore_skip
     def _attach_video(self, exc_info):
         with self.log_exception("Attach video"):
-            self.screencapture.stop()
+            self.video_recorder.stop()
 
-            if not os.path.isfile(self.screencapture.file_path):
+            if not os.path.isfile(self.video_recorder.file_path):
                 LOGGER.warn("can't copy video from {!r}".format(
-                    self.screencapture.file_path))
+                    self.video_recorder.file_path))
                 return
 
-            copyfile(self.screencapture.file_path,
+            copyfile(self.video_recorder.file_path,
                      os.path.join(self._test_report_dir, 'video.mp4'))
 
     @ignore_skip
