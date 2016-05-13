@@ -14,34 +14,25 @@ import contextlib
 import logging
 import os
 from shutil import copyfile
-import signal
 from six import StringIO
-import subprocess
 import tempfile
 import time
 import traceback
 import types
 import uuid
-from functools import wraps
 
-from selenium.webdriver.common import action_chains
-from selenium.webdriver.common import by
-from selenium.webdriver.common import keys
 from selenium.webdriver.remote.remote_connection import RemoteConnection
 import testtools
-import xvfbwrapper
 
-from horizon.test import webdriver
 from openstack_dashboard.test.integration_tests import config
-from openstack_dashboard.test.integration_tests.pages import loginpage
-from openstack_dashboard.test.integration_tests.regions import messages
+from openstack_dashboard.test.integration_tests import fixtures
+from openstack_dashboard.test.integration_tests import steps
+from openstack_dashboard.test.integration_tests import utils
 
 ROOT_LOGGER = logging.getLogger()
 ROOT_LOGGER.setLevel(logging.DEBUG)
 LOGGER = logging.getLogger(__name__)
 ROOT_PATH = os.path.dirname(os.path.abspath(config.__file__))
-IS_SELENIUM_HEADLESS = os.environ.get('SELENIUM_HEADLESS', False)
-CONF = config.get_config()
 RemoteConnection.set_timeout(60)
 
 
@@ -78,71 +69,6 @@ def gen_temporary_file(name='', suffix='.qcow2', size=10485760):
         yield tmp_file.name
 
 
-def once_only(func):
-    called_funcs = {}
-
-    @wraps(func)
-    def wrapper(*args, **kwgs):
-        if func.__name__ not in called_funcs:
-            result = obj = func(*args, **kwgs)
-            if isinstance(obj, types.GeneratorType):
-
-                def gi_wrapper():
-                    while True:
-                        result = obj.next()
-                        called_funcs[func.__name__] = result
-                        yield result
-
-                return gi_wrapper()
-            else:
-                called_funcs[func.__name__] = result
-                return result
-        else:
-            return called_funcs[func.__name__]
-
-    return wrapper
-
-
-def ignore_skip(func):
-
-    @wraps(func)
-    def wrapper(self, exc_info):
-        if exc_info[0].__name__ == 'SkipTest':
-            return
-        return func(self, exc_info)
-
-    return wrapper
-
-
-def screen_size():
-    if IS_SELENIUM_HEADLESS:
-        return (1920, 1080)
-
-    if not subprocess.call('which xdpyinfo > /dev/null 2>&1', shell=True):
-        return subprocess.check_output(
-            'xdpyinfo | grep dimensions', shell=True).split()[1].split('x')
-
-    else:
-        default = (1024, 768)
-        LOGGER.error(
-            "can't define screen resolution, use default {!r}".format(default))
-        return default
-
-
-def if_ffmpeg(func):
-
-    @wraps(func)
-    def wrapper(self, *args, **kwgs):
-        if self._no_ffmpeg:
-            return
-        return func(self, *args, **kwgs)
-
-    return wrapper
-
-
-DISP_NUM = ['0.0']
-
-
 class AssertsMixin(object):
 
     def assertSequenceTrue(self, actual):
@@ -152,108 +78,9 @@ class AssertsMixin(object):
         return self.assertEqual(list(actual), [False] * len(actual))
 
 
-class VideoRecorder(object):
-
-    def __init__(self):
-        self._no_ffmpeg = False
-        self.is_launched = False
-        self.file_path = tempfile.mktemp() + '.mp4'
-        self._args = ['ffmpeg', '-video_size', '{}x{}'.format(*screen_size()),
-                      '-framerate', '15', '-f', 'x11grab', '-i',
-                      ':{}'.format(DISP_NUM[0]), self.file_path]
-
-    @if_ffmpeg
-    def start(self):
-        if self.is_launched:
-            LOGGER.warn("recording is already launched")
-            return
-
-        if subprocess.call('which ffmpeg > /dev/null 2>&1', shell=True):
-            LOGGER.error("ffmpeg isn't installed")
-            self._no_ffmpeg = True
-            return
-
-        fnull = open(os.devnull, 'w')
-        LOGGER.info('record video with {!r}'.format(' '.join(self._args)))
-        self._popen = subprocess.Popen(self._args, stdout=fnull, stderr=fnull)
-        self.is_launched = True
-
-    @if_ffmpeg
-    def stop(self):
-        if not self.is_launched:
-            LOGGER.warn("recording isn't launched")
-            return
-
-        self._popen.send_signal(signal.SIGINT)
-        self._popen.communicate()
-        self.is_launched = False
-
-    @if_ffmpeg
-    def clear(self):
-        if not os.path.isfile(self.file_path):
-            LOGGER.warn("{!r} is absent".format(self.file_path))
-            return
-
-        os.remove(self.file_path)
-
-
-def video_recorder():
-    recorder = VideoRecorder()
-    recorder.start()
-
-    yield recorder
-
-    LOGGER.info("Clean up screen capture")
-    recorder.stop()
-    recorder.clear()
-
-
-def web_driver():
-    desired_capabilities = dict(webdriver.desired_capabilities)
-    desired_capabilities['loggingPrefs'] = {'browser': 'ALL'}
-
-    driver = webdriver.WebDriverWrapper(
-        desired_capabilities=desired_capabilities)
-
-    if CONF.selenium.maximize_browser:
-        driver.maximize_window()
-        if IS_SELENIUM_HEADLESS:
-            driver.set_window_size(*screen_size())
-
-    driver.implicitly_wait(CONF.selenium.implicit_wait)
-    driver.set_page_load_timeout(CONF.selenium.page_timeout)
-
-    yield driver
-
-    LOGGER.info('Clean up web driver')
-    driver.quit()
-
-
-def vdisplay():
-    width, height = screen_size()
-    vdisplay = xvfbwrapper.Xvfb(width=width, height=height)
-    # workaround for memory leak in Xvfb taken from:
-    # http://blog.jeffterrace.com/2012/07/xvfb-memory-leak-workaround.html
-    # and disables X access control
-    args = ["-noreset", "-ac"]
-
-    if hasattr(vdisplay, 'extra_xvfb_args'):
-        vdisplay.extra_xvfb_args.extend(args)  # xvfbwrapper 0.2.8 or newer
-    else:
-        vdisplay.xvfb_cmd.extend(args)
-
-    vdisplay.start()
-    DISP_NUM[0] = vdisplay.new_display
-
-    yield vdisplay
-
-    LOGGER.info('Clean up xvfb')
-    vdisplay.stop()
-
-
 class BaseTestCase(testtools.TestCase):
 
-    CONFIG = CONF
+    CONFIG = config.get_config()
 
     def inject(self, func, *args, **kwgs):
         result = obj = func(*args, **kwgs)
@@ -278,11 +105,11 @@ class BaseTestCase(testtools.TestCase):
                 "The INTEGRATION_TESTS env variable is not set.")
 
         # Start a virtual display server for running the tests headless.
-        if IS_SELENIUM_HEADLESS:
-            self.vdisplay = self.inject(vdisplay)
+        if utils.IS_SELENIUM_HEADLESS:
+            self.vdisplay = self.inject(fixtures.vdisplay)
 
-        self.video_recorder = self.inject(video_recorder)
-        self.driver = self.inject(web_driver)
+        self.video_recorder = self.inject(fixtures.video_recorder)
+        self.driver = self.inject(fixtures.web_driver)
 
         self.addOnException(self._attach_page_source)
         self.addOnException(self._attach_screenshot)
@@ -314,20 +141,20 @@ class BaseTestCase(testtools.TestCase):
             os.makedirs(report_dir)
         return report_dir
 
-    @ignore_skip
+    @utils.ignore_skip
     def _attach_page_source(self, exc_info):
         source_path = os.path.join(self._test_report_dir, 'page.html')
         with self.log_exception("Attach page source"):
             with open(source_path, 'w') as f:
                 f.write(self._get_page_html_source())
 
-    @ignore_skip
+    @utils.ignore_skip
     def _attach_screenshot(self, exc_info):
         screen_path = os.path.join(self._test_report_dir, 'screenshot.png')
         with self.log_exception("Attach screenshot"):
             self.driver.get_screenshot_as_file(screen_path)
 
-    @ignore_skip
+    @utils.ignore_skip
     def _attach_video(self, exc_info):
         with self.log_exception("Attach video"):
             self.video_recorder.stop()
@@ -340,7 +167,7 @@ class BaseTestCase(testtools.TestCase):
             copyfile(self.video_recorder.file_path,
                      os.path.join(self._test_report_dir, 'video.mp4'))
 
-    @ignore_skip
+    @utils.ignore_skip
     def _attach_browser_log(self, exc_info):
         browser_log_path = os.path.join(self._test_report_dir, 'browser.log')
         with self.log_exception("Attach browser log"):
@@ -348,7 +175,7 @@ class BaseTestCase(testtools.TestCase):
                 f.write(
                     self._unwrap_browser_log(self.driver.get_log('browser')))
 
-    @ignore_skip
+    @utils.ignore_skip
     def _attach_test_log(self, exc_info):
         test_log_path = os.path.join(self._test_report_dir, 'test.log')
         with self.log_exception("Attach test log"):
@@ -400,20 +227,9 @@ class TestCase(BaseTestCase, AssertsMixin):
 
     def setUp(self):
         super(TestCase, self).setUp()
-        self.login_pg = loginpage.LoginPage(self.driver, self.CONFIG)
-        self.login_pg.go_to_login_page()
+        self.inject(steps.login, self)
 
-        self.create_demo_user()
-
-        self.home_pg = self.login_pg.login(self.TEST_USER_NAME,
-                                           self.TEST_PASSWORD)
-        self.home_pg.change_project(self.HOME_PROJECT)
-        self.assertTrue(
-            self.home_pg.find_message_and_dismiss(messages.SUCCESS))
-        self.assertFalse(
-            self.home_pg.find_message_and_dismiss(messages.ERROR))
-
-    @once_only
+    @utils.once_only
     def create_demo_user(self):
         self.home_pg = self.login_pg.login(self.ADMIN_NAME,
                                            self.ADMIN_PASSWORD)
@@ -432,14 +248,6 @@ class TestCase(BaseTestCase, AssertsMixin):
         if self.home_pg.is_logged_in:
             self.home_pg.go_to_home_page()
             self.home_pg.log_out()
-
-    def tearDown(self):
-        try:
-            if self.home_pg.is_logged_in:
-                self.home_pg.go_to_home_page()
-                self.home_pg.log_out()
-        finally:
-            super(TestCase, self).tearDown()
 
 
 class AdminTestCase(TestCase, AssertsMixin):
