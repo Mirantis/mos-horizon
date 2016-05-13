@@ -211,18 +211,38 @@ class BaseTestCase(testtools.TestCase):
                 self.vdisplay.extra_xvfb_args.extend(args)
             else:
                 self.vdisplay.xvfb_cmd.extend(args)
+
             self.vdisplay.start()
+
+            def cleanup_vdisplay():
+                LOGGER.info('Clean up xvfb')
+                self.vdisplay.stop()
+
+            self.addCleanup(cleanup_vdisplay)
+
             DISP_NUM[0] = self.vdisplay.xvfb_cmd[1]
 
         self.screencapture = VideoRecorder()
         self.screencapture.start()
 
+        def cleanup_screencapture():
+            LOGGER.info("Clean up screen capture")
+            self.screencapture.stop()
+            self.screencapture.clear()
+
+        self.addCleanup(cleanup_screencapture)
+
         # Start the Selenium webdriver and setup configuration.
         desired_capabilities = dict(webdriver.desired_capabilities)
         desired_capabilities['loggingPrefs'] = {'browser': 'ALL'}
         self.driver = webdriver.WebDriverWrapper(
-            desired_capabilities=desired_capabilities
-        )
+            desired_capabilities=desired_capabilities)
+
+        def cleanup_driver():
+            LOGGER.info('Clean up web driver')
+            self.driver.quit()
+
+        self.addCleanup(cleanup_driver)
 
         if self.CONFIG.selenium.maximize_browser:
             self.driver.maximize_window()
@@ -331,18 +351,6 @@ class BaseTestCase(testtools.TestCase):
         """
         html_elem = self.driver.find_element_by_tag_name("html")
         return html_elem.get_attribute("innerHTML").encode("utf-8")
-
-    def tearDown(self):
-        if os.environ.get('INTEGRATION_TESTS', False):
-            self.driver.quit()
-
-        self.screencapture.stop()
-        self.screencapture.clear()
-
-        if IS_SELENIUM_HEADLESS:
-            self.vdisplay.stop()
-
-        super(BaseTestCase, self).tearDown()
 
 
 class TestCase(BaseTestCase, AssertsMixin):
