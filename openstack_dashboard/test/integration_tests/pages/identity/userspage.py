@@ -28,7 +28,7 @@ class UsersTable(tables.TableRegion):
         return forms.FormRegion(self.driver, self.conf,
                                 field_mappings=self.CREATE_USER_FORM_FIELDS)
 
-    @tables.bind_row_action('edit')
+    @tables.bind_row_action('edit', primary=True)
     def edit_user(self, edit_button, row):
         edit_button.click()
         return forms.FormRegion(self.driver, self.conf,
