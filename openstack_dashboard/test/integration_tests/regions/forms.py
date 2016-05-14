@@ -460,6 +460,8 @@ class DateFormRegion(BaseFormRegion):
 
 class MetadataFormRegion(BaseFormRegion):
 
+    _input_tmpl = ('//div[contains(@class, "input-group") and '
+                   'descendant::span[@title="{}"]]')
     _input_fields = (by.By.CSS_SELECTOR, 'div.input-group')
     _custom_input_field = (by.By.XPATH, "//input[@name='customItem']")
     _custom_input_button = (by.By.CSS_SELECTOR, 'span.input-group-btn > .btn')
@@ -480,11 +482,11 @@ class MetadataFormRegion(BaseFormRegion):
     def add_custom_field(self, field_name, field_value):
         self.custom_field_value.send_keys(field_name)
         self.add_button.click()
-        for div in self._get_elements(*self._input_fields):
-            if div.text in field_name:
-                field = div.find_element(by.By.CSS_SELECTOR, 'input')
-                if not hasattr(self, field_name):
-                    self._dynamic_properties[field_name] = field
+        div = self._get_element(by.By.XPATH,
+                                self._input_tmpl.format(field_name))
+        field = div.find_element(by.By.CSS_SELECTOR, 'input')
+        if not hasattr(self, field_name):
+            self._dynamic_properties[field_name] = field
         self.set_field_value(field_name, field_value)
 
     def set_field_value(self, field_name, field_value):

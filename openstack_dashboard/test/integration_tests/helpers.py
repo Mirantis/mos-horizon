@@ -78,7 +78,7 @@ class AssertsMixin(object):
         return self.assertEqual(list(actual), [False] * len(actual))
 
 
-class BaseTestCase(testtools.TestCase):
+class BaseTestCase(testtools.TestCase, AssertsMixin):
 
     CONFIG = config.get_config()
 
@@ -211,7 +211,7 @@ class BaseTestCase(testtools.TestCase):
         return html_elem.get_attribute("innerHTML").encode("utf-8")
 
 
-class TestCase(BaseTestCase, AssertsMixin):
+class TestCase(BaseTestCase):
 
     ADMIN_NAME = BaseTestCase.CONFIG.identity.admin_username
     ADMIN_PASSWORD = BaseTestCase.CONFIG.identity.admin_password
@@ -250,7 +250,7 @@ class TestCase(BaseTestCase, AssertsMixin):
             self.home_pg.log_out()
 
 
-class AdminTestCase(TestCase, AssertsMixin):
+class AdminTestCase(TestCase):
 
     TEST_USER_NAME = TestCase.CONFIG.identity.admin_username
     TEST_PASSWORD = TestCase.CONFIG.identity.admin_password
