@@ -54,7 +54,16 @@ def gen_random_resource_name(resource="", timestamp=True):
     return "_".join(fields)
 
 
-class BaseTestCase(testtools.TestCase):
+class AssertsMixin(object):
+
+    def assertSequenceTrue(self, actual):
+        return self.assertEqual(list(actual), [True] * len(actual))
+
+    def assertSequenceFalse(self, actual):
+        return self.assertEqual(list(actual), [False] * len(actual))
+
+
+class BaseTestCase(testtools.TestCase, AssertsMixin):
 
     CONFIG = config.get_config()
 
