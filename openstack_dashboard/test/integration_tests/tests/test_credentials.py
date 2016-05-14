@@ -74,7 +74,7 @@ class TestDownloadRCFile(helpers.AdminTestCase):
         remove(join(self._directory, listdir(self._directory)[0]))
 
 
-class ViewCredentials(helpers.AdminTestCase):
+class TestViewCredentials(helpers.AdminTestCase):
 
     def test_view_credentials(self):
         """This test checks user credentials
