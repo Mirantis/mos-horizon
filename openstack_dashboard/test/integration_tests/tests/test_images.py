@@ -22,18 +22,18 @@ class TestImagesBasic(helpers.TestCase):
     def images_page(self):
         return self.home_pg.go_to_compute_imagespage()
 
-    def image_create(self, local_file=None):
+    def image_create(self, image_name=IMAGE_NAME, local_file=None):
         images_page = self.images_page
         if local_file:
-            images_page.create_image(self.IMAGE_NAME,
+            images_page.create_image(image_name,
                                      image_source_type='file',
                                      image_file=local_file)
         else:
-            images_page.create_image(self.IMAGE_NAME)
-        self.assertTrue(images_page.find_message_and_dismiss(messages.INFO))
+            images_page.create_image(image_name)
+        self.assertTrue(images_page.find_message_and_dismiss(messages.SUCCESS))
         self.assertFalse(images_page.find_message_and_dismiss(messages.ERROR))
-        self.assertTrue(images_page.is_image_present(self.IMAGE_NAME))
-        self.assertTrue(images_page.is_image_active(self.IMAGE_NAME))
+        self.assertTrue(images_page.is_image_present(image_name))
+        self.assertTrue(images_page.is_image_active(image_name))
         return images_page
 
     def image_delete(self, image_name):
@@ -41,7 +41,7 @@ class TestImagesBasic(helpers.TestCase):
         images_page.delete_image(image_name)
         self.assertTrue(images_page.find_message_and_dismiss(messages.SUCCESS))
         self.assertFalse(images_page.find_message_and_dismiss(messages.ERROR))
-        self.assertFalse(images_page.is_image_present(self.IMAGE_NAME))
+        self.assertFalse(images_page.is_image_present(image_name))
 
     def test_image_create_delete(self):
         """tests the image creation and deletion functionalities:
@@ -51,7 +51,7 @@ class TestImagesBasic(helpers.TestCase):
         * verifies the image does not appear in the table after deletion
         """
         self.image_create()
-        self.image_delete(self.IMAGE_NAME)
+        self.image_delete(IMAGE_NAME)
 
     def test_image_create_delete_from_local_file(self):
         """tests the image creation and deletion functionalities:
@@ -63,7 +63,7 @@ class TestImagesBasic(helpers.TestCase):
         """
         with helpers.gen_temporary_file() as file_name:
             self.image_create(local_file=file_name)
-            self.image_delete(self.IMAGE_NAME)
+            self.image_delete(IMAGE_NAME)
 
     def test_images_pagination(self):
         """This test checks images pagination
@@ -83,9 +83,9 @@ class TestImagesBasic(helpers.TestCase):
             10) Go to user settings page and restore 'Items Per Page'
         """
         first_image = "image_1"
-        self.create_image(first_image)
+        self.image_create(first_image)
         second_image = "image_2"
-        self.create_image(second_image)
+        self.image_create(second_image)
         third_image = self.CONFIG.image.images_list[0]
         items_per_page = 1
 
@@ -122,8 +122,8 @@ class TestImagesBasic(helpers.TestCase):
         settings_page.change_pagesize()
         settings_page.find_message_and_dismiss(messages.SUCCESS)
 
-        self.delete_image(second_image)
-        self.delete_image(first_image)
+        self.image_delete(second_image)
+        self.image_delete(first_image)
 
     def test_update_image_metadata(self):
         """Test update image metadata
@@ -143,10 +143,10 @@ class TestImagesBasic(helpers.TestCase):
 
         with helpers.gen_temporary_file() as file_name:
             images_page = self.image_create(local_file=file_name)
-            images_page.add_custom_metadata(self.IMAGE_NAME, new_metadata)
-            results = images_page.check_image_details(self.IMAGE_NAME,
+            images_page.add_custom_metadata(IMAGE_NAME, new_metadata)
+            results = images_page.check_image_details(IMAGE_NAME,
                                                       new_metadata)
-            self.image_delete(self.IMAGE_NAME)
+            self.image_delete(IMAGE_NAME)
             self.assertSequenceTrue(results)
 
     def test_remove_protected_image(self):
@@ -165,7 +165,7 @@ class TestImagesBasic(helpers.TestCase):
         """
         with helpers.gen_temporary_file() as file_name:
             images_page = self.image_create(local_file=file_name)
-            images_page.edit_image(self.IMAGE_NAME, protected=True)
+            images_page.edit_image(IMAGE_NAME, protected=True)
             self.assertTrue(
                 images_page.find_message_and_dismiss(messages.SUCCESS))
 
@@ -173,20 +173,20 @@ class TestImagesBasic(helpers.TestCase):
             # The below action will generate exception since the bind fails.
             # But only ValueError with message below is expected here.
             with self.assertRaisesRegexp(ValueError, 'Could not bind method'):
-                images_page.delete_image_via_row_action(self.IMAGE_NAME)
+                images_page.delete_image_via_row_action(IMAGE_NAME)
 
             # Try to delete image. That should not be possible now.
-            images_page.delete_image(self.IMAGE_NAME)
+            images_page.delete_image(IMAGE_NAME)
             self.assertFalse(
                 images_page.find_message_and_dismiss(messages.SUCCESS))
             self.assertTrue(
                 images_page.find_message_and_dismiss(messages.ERROR))
-            self.assertTrue(images_page.is_image_present(self.IMAGE_NAME))
+            self.assertTrue(images_page.is_image_present(IMAGE_NAME))
 
-            images_page.edit_image(self.IMAGE_NAME, protected=False)
+            images_page.edit_image(IMAGE_NAME, protected=False)
             self.assertTrue(
                 images_page.find_message_and_dismiss(messages.SUCCESS))
-            self.image_delete(self.IMAGE_NAME)
+            self.image_delete(IMAGE_NAME)
 
     def test_edit_image_description_and_name(self):
         """tests that image description is editable
@@ -205,21 +205,21 @@ class TestImagesBasic(helpers.TestCase):
         new_image_name = helpers.gen_random_resource_name("image")
         with helpers.gen_temporary_file() as file_name:
             images_page = self.image_create(local_file=file_name)
-            images_page.edit_image(self.IMAGE_NAME,
+            images_page.edit_image(IMAGE_NAME,
                                    description=new_description_text)
             self.assertTrue(
                 images_page.find_message_and_dismiss(messages.SUCCESS))
             self.assertFalse(
                 images_page.find_message_and_dismiss(messages.ERROR))
 
-            results = images_page.check_image_details(self.IMAGE_NAME,
+            results = images_page.check_image_details(IMAGE_NAME,
                                                       {'Description':
                                                        new_description_text})
             self.assertSequenceTrue(results)
 
             # Just go back to the images page and toggle edit again
             images_page = self.images_page
-            images_page.edit_image(self.IMAGE_NAME,
+            images_page.edit_image(IMAGE_NAME,
                                    new_name=new_image_name)
             self.assertTrue(
                 images_page.find_message_and_dismiss(messages.SUCCESS))
@@ -299,6 +299,7 @@ class TestImagesAdvanced(TestImagesBasic):
             instances_page.find_message_and_dismiss(messages.ERROR))
         self.assertTrue(instances_page.is_instance_deleted(target_instance))
 
+    @decorators.skip_new_design
     def test_edit_image_disk_and_ram_size(self):
         """tests that it is not possible to launch instances in case of limits
         * logs in as admin user
@@ -317,12 +318,12 @@ class TestImagesAdvanced(TestImagesBasic):
         """
         images_page = self.image_create()
 
-        images_page.edit_image(self.IMAGE_NAME, minimum_disk=60)
+        images_page.edit_image(IMAGE_NAME, minimum_disk=60)
         self.assertTrue(images_page.find_message_and_dismiss(messages.SUCCESS))
         self.assertFalse(images_page.find_message_and_dismiss(messages.ERROR))
         self.assertLaunchedFlavorIs('m1.large', images_page)
 
-        images_page.edit_image(self.IMAGE_NAME, minimum_disk=0,
+        images_page.edit_image(IMAGE_NAME, minimum_disk=0,
                                minimum_ram=4096)
         self.assertTrue(images_page.find_message_and_dismiss(messages.SUCCESS))
         self.assertFalse(images_page.find_message_and_dismiss(messages.ERROR))
@@ -332,7 +333,7 @@ class TestImagesAdvanced(TestImagesBasic):
 
     def assertLaunchedFlavorIs(self, expected_flavor_name, images_page):
         launch_instance_form = images_page.get_launch_instance_form(
-            self.IMAGE_NAME)
+            IMAGE_NAME)
         flavor_name = launch_instance_form.flavor.text
         launch_instance_form.cancel()
         self.assertEqual(flavor_name, expected_flavor_name)
