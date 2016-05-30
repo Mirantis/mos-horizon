@@ -111,10 +111,20 @@ class CheckBoxFormFieldRegion(CheckBoxMixin, BaseFormFieldRegion):
     _element_locator_str_suffix = 'input[type=checkbox]'
 
 
+class RadioButtonFormFieldRegionNG(BaseFormFieldRegion):
+
+    _element_locator_str_suffix = '[btn-radio]'
+
+    @property
+    def name(self):
+        return self.element.get_attribute('name') or \
+            self.element.get_attribute('id')
+
+
 class ChooseFileFormFieldRegion(BaseFormFieldRegion):
     """Choose file field."""
 
-    _element_locator_str_suffix = 'div > input[type=file]'
+    _element_locator_str_suffix = 'input[type=file]'
 
     def choose(self, path):
         self.element.send_keys(path)
@@ -137,31 +147,31 @@ class TextInputFormFieldRegion(BaseTextFormFieldRegion):
     """Text input box."""
 
     _element_locator_str_suffix = \
-        'div > input[type=text], div > input[type=None]'
+        'input[type=text], input[type=None]'
 
 
 class PasswordInputFormFieldRegion(BaseTextFormFieldRegion):
     """Password text input box."""
 
-    _element_locator_str_suffix = 'div > input[type=password]'
+    _element_locator_str_suffix = 'input[type=password]'
 
 
 class EmailInputFormFieldRegion(BaseTextFormFieldRegion):
     """Email text input box."""
 
-    _element_locator_str_suffix = 'div > input[type=email]'
+    _element_locator_str_suffix = 'input[type=email]'
 
 
 class TextAreaFormFieldRegion(BaseTextFormFieldRegion):
     """Multi-line text input box."""
 
-    _element_locator_str_suffix = 'div > textarea'
+    _element_locator_str_suffix = 'textarea'
 
 
 class IntegerFormFieldRegion(BaseFormFieldRegion):
     """Integer input box."""
 
-    _element_locator_str_suffix = 'div > input[type=number]'
+    _element_locator_str_suffix = 'input[type=number]'
 
     @property
     def value(self):
@@ -175,7 +185,7 @@ class IntegerFormFieldRegion(BaseFormFieldRegion):
 class SelectFormFieldRegion(BaseFormFieldRegion):
     """Select box field."""
 
-    _element_locator_str_suffix = 'div > select'
+    _element_locator_str_suffix = 'select'
 
     def is_displayed(self):
         return self.element._el.is_displayed()
@@ -193,7 +203,8 @@ class SelectFormFieldRegion(BaseFormFieldRegion):
 
     @property
     def name(self):
-        return self.element._el.get_attribute('name')
+        raw_el = self.element._el
+        return raw_el.get_attribute('name') or raw_el.get_attribute('id')
 
     @property
     def text(self):
@@ -410,7 +421,7 @@ class TabbedFormRegion(FormRegion):
                 self._dynamic_properties[accessor_name] = fields[accessor_expr]
             else:  # it is a class
                 self._dynamic_properties[accessor_name] = accessor_expr(
-                    self.driver, self.conf)
+                    self.driver, self.conf, self.fields_src_elem)
 
     def switch_to(self, tab_index=0):
         self.tabs.switch_to(index=tab_index)
@@ -420,6 +431,21 @@ class TabbedFormRegion(FormRegion):
     def tabs(self):
         return menus.TabbedMenuRegion(self.driver, self.conf,
                                       src_elem=self.src_elem)
+
+
+class TabbedFormRegionNG(TabbedFormRegion):
+    """Forms that are divided with vertical tabs.
+       These forms are implemented in angular-js and
+       have transfer-tables as usual field's element.
+    """
+
+    _submit_locator = (by.By.CSS_SELECTOR, 'button.btn.btn-primary.finish')
+    _header_locator = (by.By.CSS_SELECTOR, '.modal-header > .h4')
+    _fields_locator = (by.By.CSS_SELECTOR, '.step ng-include[ng-form]')
+
+    @property
+    def tabs(self):
+        return menus.TabbedMenuRegionNG(self.driver, self.conf)
 
 
 class DateFormRegion(BaseFormRegion):
