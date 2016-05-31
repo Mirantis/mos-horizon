@@ -43,7 +43,8 @@ class VideoRecorder(object):
         self.file_path = mktemp() + '.mp4'
         self._args = ['ffmpeg', '-video_size', '{}x{}'.format(*screen_size()),
                       '-framerate', '15', '-f', 'x11grab', '-i',
-                      ':{}'.format(self.DISPLAY), self.file_path]
+                      ':{}'.format(self.DISPLAY), '-codec', 'libx264',
+                      self.file_path]
 
     @if_ffmpeg
     def start(self):
