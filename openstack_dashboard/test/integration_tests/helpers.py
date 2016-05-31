@@ -128,7 +128,7 @@ class BaseTestCase(testtools.TestCase, AssertsMixin):
         stream_handler = logging.StreamHandler(stream=self._log_buffer)
         stream_handler.setLevel(logging.DEBUG)
         formatter = logging.Formatter(
-            '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+            '%(asctime)s - %(levelname)s - %(name)s#%(lineno)d - %(message)s')
         stream_handler.setFormatter(formatter)
         ROOT_LOGGER.addHandler(stream_handler)
 
