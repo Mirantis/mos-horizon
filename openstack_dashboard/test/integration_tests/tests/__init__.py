@@ -16,9 +16,9 @@ import sys
 
 import requests
 
-from openstack_dashboard.test.integration_tests.helpers import (ROOT_LOGGER,
-                                                                ROOT_PATH)
+from openstack_dashboard.test.integration_tests.helpers import ROOT_PATH
 
+ROOT_LOGGER = logging.getLogger()
 LOGGER = logging.getLogger(__name__)
 
 

@@ -11,10 +11,9 @@
 # under the License.
 
 import contextlib
+from functools import wraps
 import logging
 import os
-from shutil import copyfile
-from six import StringIO
 import tempfile
 import time
 import traceback
@@ -29,8 +28,11 @@ from openstack_dashboard.test.integration_tests import fixtures
 from openstack_dashboard.test.integration_tests import steps
 from openstack_dashboard.test.integration_tests import utils
 
-ROOT_LOGGER = logging.getLogger()
-ROOT_LOGGER.setLevel(logging.DEBUG)
+try:
+    from unittest2.case import SkipTest
+except ImportError:
+    from unittest.case import SkipTest
+
 LOGGER = logging.getLogger(__name__)
 ROOT_PATH = os.path.dirname(os.path.abspath(config.__file__))
 RemoteConnection.set_timeout(60)
@@ -81,6 +83,11 @@ class BaseTestCase(testtools.TestCase, AssertsMixin):
 
     CONFIG = config.get_config()
 
+    def __init__(self, *args, **kwgs):
+        super(BaseTestCase, self).__init__(*args, **kwgs)
+        self.is_failed = False
+        self.addOnException(lambda exc_info: setattr(self, 'is_failed', True))
+
     def inject(self, func, *args, **kwgs):
         result = obj = func(*args, **kwgs)
         if isinstance(obj, types.GeneratorType):
@@ -95,41 +102,28 @@ class BaseTestCase(testtools.TestCase, AssertsMixin):
             self.addCleanup(cleanup)
         return result
 
+    def addOnException(self, exception_handler):
+
+        @wraps(exception_handler)
+        def wrapped_handler(exc_info):
+            if issubclass(exc_info[0], SkipTest):
+                return
+            return exception_handler(exc_info)
+
+        super(BaseTestCase, self).addOnException(wrapped_handler)
+
     def setUp(self):
-        self._configure_log()
+        super(BaseTestCase, self).setUp()
+        self.inject(fixtures.logger, self)
 
-        # TODO(schipiga): remove that code. Launch logic must be above.
-        if not os.environ.get('INTEGRATION_TESTS', False):
-            raise self.skipException(
-                "The INTEGRATION_TESTS env variable is not set.")
-
-        # Start a virtual display server for running the tests headless.
         if utils.IS_SELENIUM_HEADLESS:
-            self.vdisplay = self.inject(fixtures.vdisplay)
+            self.inject(fixtures.vdisplay)
 
-        self.video_recorder = self.inject(fixtures.video_recorder)
-        self.driver = self.inject(fixtures.web_driver)
+        self.inject(fixtures.video_recorder, self)
+        self.driver = self.inject(fixtures.web_driver, self)
 
         self.addOnException(self._attach_page_source)
         self.addOnException(self._attach_screenshot)
-        self.addOnException(self._attach_video)
-        self.addOnException(self._attach_browser_log)
-        self.addOnException(self._attach_test_log)
-
-        super(BaseTestCase, self).setUp()
-
-    def _configure_log(self):
-        """Configure log to capture test logs include selenium logs in order
-        to attach them if test will be broken.
-        """
-        ROOT_LOGGER.handlers[:] = []  # clear other handlers to set target handler
-        self._log_buffer = StringIO()
-        stream_handler = logging.StreamHandler(stream=self._log_buffer)
-        stream_handler.setLevel(logging.DEBUG)
-        formatter = logging.Formatter(
-            '%(asctime)s - %(levelname)s - %(name)s#%(lineno)d - %(message)s')
-        stream_handler.setFormatter(formatter)
-        ROOT_LOGGER.addHandler(stream_handler)
 
     @property
     def _test_report_dir(self):
@@ -140,46 +134,16 @@ class BaseTestCase(testtools.TestCase, AssertsMixin):
             os.makedirs(report_dir)
         return report_dir
 
-    @utils.ignore_skip
     def _attach_page_source(self, exc_info):
         source_path = os.path.join(self._test_report_dir, 'page.html')
         with self.log_exception("Attach page source"):
             with open(source_path, 'w') as f:
                 f.write(self._get_page_html_source())
 
-    @utils.ignore_skip
     def _attach_screenshot(self, exc_info):
         screen_path = os.path.join(self._test_report_dir, 'screenshot.png')
         with self.log_exception("Attach screenshot"):
             self.driver.get_screenshot_as_file(screen_path)
-
-    @utils.ignore_skip
-    def _attach_video(self, exc_info):
-        with self.log_exception("Attach video"):
-            self.video_recorder.stop()
-
-            if not os.path.isfile(self.video_recorder.file_path):
-                LOGGER.warn("can't copy video from {!r}".format(
-                    self.video_recorder.file_path))
-                return
-
-            copyfile(self.video_recorder.file_path,
-                     os.path.join(self._test_report_dir, 'video.mp4'))
-
-    @utils.ignore_skip
-    def _attach_browser_log(self, exc_info):
-        browser_log_path = os.path.join(self._test_report_dir, 'browser.log')
-        with self.log_exception("Attach browser log"):
-            with open(browser_log_path, 'w') as f:
-                f.write(
-                    self._unwrap_browser_log(self.driver.get_log('browser')))
-
-    @utils.ignore_skip
-    def _attach_test_log(self, exc_info):
-        test_log_path = os.path.join(self._test_report_dir, 'test.log')
-        with self.log_exception("Attach test log"):
-            with open(test_log_path, 'w') as f:
-                f.write(self._log_buffer.getvalue().encode('utf-8'))
 
     @contextlib.contextmanager
     def log_exception(self, label):
