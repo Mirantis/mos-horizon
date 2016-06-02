@@ -11,6 +11,9 @@
 #    under the License.
 
 import logging
+import os
+import shutil
+from six import StringIO
 
 from horizon.test import webdriver
 import xvfbwrapper
@@ -19,10 +22,35 @@ from openstack_dashboard.test.integration_tests import utils
 from openstack_dashboard.test.integration_tests.video_recorder import \
     VideoRecorder
 
+ROOT_LOGGER = logging.getLogger()
+ROOT_LOGGER.setLevel(logging.DEBUG)
+
 LOGGER = logging.getLogger(__name__)
 
 
-def video_recorder():
+def logger(test_case):
+    log_buffer = StringIO()
+    ROOT_LOGGER.handlers[:] = []
+
+    stream_handler = logging.StreamHandler(stream=log_buffer)
+    stream_handler.setLevel(logging.DEBUG)
+
+    formatter = logging.Formatter(
+        '%(asctime)s - %(levelname)s - %(name)s#%(lineno)d - %(message)s')
+    stream_handler.setFormatter(formatter)
+    ROOT_LOGGER.addHandler(stream_handler)
+
+    yield log_buffer
+
+    if test_case.is_failed:
+        log_path = os.path.join(test_case._test_report_dir, 'test.log')
+
+        with test_case.log_exception("Attach test log"):
+            with open(log_path, 'w') as log_file:
+                log_file.write(log_buffer.getvalue().encode('utf-8'))
+
+
+def video_recorder(test_case):
     recorder = VideoRecorder()
     recorder.start()
 
@@ -30,10 +58,21 @@ def video_recorder():
 
     LOGGER.info("Stop video recording")
     recorder.stop()
-    recorder.clear()
+
+    if test_case.is_failed:
+        if os.path.isfile(recorder.file_path):
+            with test_case.log_exception("Attach video"):
+                shutil.move(recorder.file_path,
+                            os.path.join(test_case._test_report_dir,
+                                         'video.mp4'))
+        else:
+            LOGGER.warn(
+                "Can't move video from {!r}".format(recorder.file_path))
+    else:
+        recorder.clear()
 
 
-def web_driver():
+def web_driver(test_case):
     desired_capabilities = dict(webdriver.desired_capabilities)
     desired_capabilities['loggingPrefs'] = {'browser': 'ALL'}
 
@@ -49,6 +88,14 @@ def web_driver():
     driver.set_page_load_timeout(utils.CONF.selenium.page_timeout)
 
     yield driver
+
+    if test_case.is_failed:
+        log_path = os.path.join(test_case._test_report_dir, 'browser.log')
+
+        with test_case.log_exception("Attach browser log"):
+            with open(log_path, 'w') as log_file:
+                log_file.write(
+                    test_case._unwrap_browser_log(driver.get_log('browser')))
 
     LOGGER.info('Stop web driver')
     driver.quit()

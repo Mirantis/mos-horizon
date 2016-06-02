@@ -48,17 +48,6 @@ def once_only(func):
     return wrapper
 
 
-def ignore_skip(func):
-
-    @wraps(func)
-    def wrapper(self, exc_info):
-        if exc_info[0].__name__ == 'SkipTest':
-            return
-        return func(self, exc_info)
-
-    return wrapper
-
-
 def screen_size():
     if IS_SELENIUM_HEADLESS:
         return (1920, 1080)
