@@ -9,7 +9,6 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
-from time import sleep
 
 from openstack_dashboard.test.integration_tests.pages import basepage
 from openstack_dashboard.test.integration_tests.regions import forms
@@ -139,23 +138,19 @@ class InstancesPage(basepage.BaseNavigationPage):
             availability_zone = self.conf.launch_instances.available_zone
 
         instance_form = self.instances_table.launch_instance_ng()
-        sleep(2)
         instance_form.name.text = name
         instance_form.availability_zone.text = availability_zone
         instance_form.instance_count.value = instance_count
 
         instance_form.switch_to(1)
-        sleep(2)
         instance_form.boot_source_type = boot_source_type
         instance_form.vol_create.text = vol_create
         instance_form.boot_sources.allocate_item(name=image_name)
 
         instance_form.switch_to(2)
-        sleep(2)
         instance_form.flavors.allocate_item(name=flavor_size)
 
         instance_form.switch_to(3)
-        sleep(2)
         instance_form.networks.allocate_item(name=network)
         instance_form.submit()
 
