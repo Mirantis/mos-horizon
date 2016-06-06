@@ -395,13 +395,15 @@ class TransferTableMenuRegion(baseregion.BaseRegion):
 
     @property
     def available_items(self):
-        return {self._get_item_name(el): el for el in
-                self._get_elements(*self._available_locator)}
+        items = self._wait_until(
+            lambda _: self._get_elements(*self._available_locator))
+        return {self._get_item_name(el): el for el in items}
 
     @property
     def allocated_items(self):
-        return {self._get_item_name(el): el for el in
-                self._get_element(*self._allocated_locator)}
+        items = self._wait_until(
+            lambda _: self._get_elements(*self._allocated_locator))
+        return {self._get_item_name(el): el for el in items}
 
     def allocate_item(self, name):
         item = self.available_items[name]
