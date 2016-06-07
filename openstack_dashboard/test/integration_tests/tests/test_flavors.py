@@ -17,11 +17,12 @@ from openstack_dashboard.test.integration_tests.regions import messages
 class TestFlavors(helpers.AdminTestCase):
     FLAVOR_NAME = helpers.gen_random_resource_name("flavor")
 
-    def flavor_create(self):
+    def flavor_create(self, selected_projects=None):
         flavors_page = self.home_pg.go_to_system_flavorspage()
         flavors_page.create_flavor(name=self.FLAVOR_NAME, vcpus=1, ram=1024,
                                    root_disk=20, ephemeral_disk=0,
-                                   swap_disk=0)
+                                   swap_disk=0,
+                                   selected_projects=selected_projects)
         self.assertTrue(
             flavors_page.find_message_and_dismiss(messages.SUCCESS))
         self.assertFalse(flavors_page.find_message_and_dismiss(messages.ERROR))
@@ -85,3 +86,31 @@ class TestFlavors(helpers.AdminTestCase):
         self.assertTrue(flavors_page.is_flavor_present(new_flavor_name))
 
         self.flavor_delete(new_flavor_name)
+
+    def test_modify_flavor_access(self):
+        self.flavor_create(selected_projects=['admin'])
+        assert self.FLAVOR_NAME in self._available_flavors()
+
+        self.home_pg.log_out()
+
+        self.home_pg = self.login_pg.login(self.DEMO_NAME, self.DEMO_PASSWORD)
+        self.home_pg.change_project(self.DEMO_PROJECT)
+        assert self.FLAVOR_NAME not in self._available_flavors()
+
+        self.home_pg.log_out()
+
+        self.home_pg = self.login_pg.login(self.ADMIN_NAME,
+                                           self.ADMIN_PASSWORD)
+        self.home_pg.change_project(self.ADMIN_PROJECT)
+
+        self.flavor_delete()
+
+    def _available_flavors(self):
+        instances_page = self.home_pg.go_to_compute_instancespage()
+        launch_instance_form = \
+            instances_page.instances_table.launch_instance_ng()
+        launch_instance_form.switch_to(2)
+        available_flavor_names = \
+            launch_instance_form.flavors.available_items.keys()
+        launch_instance_form.cancel()
+        return available_flavor_names

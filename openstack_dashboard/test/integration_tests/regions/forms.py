@@ -450,6 +450,7 @@ class TabbedFormRegionNG(TabbedFormRegion):
     _submit_locator = (by.By.CSS_SELECTOR, 'button.btn.btn-primary.finish')
     _header_locator = (by.By.CSS_SELECTOR, '.modal-header > .h4')
     _fields_locator = (by.By.CSS_SELECTOR, '.step ng-include[ng-form]')
+    _cancel_locator = (by.By.CSS_SELECTOR, 'button.btn.btn-default.pull-left')
 
     @property
     def tabs(self):
@@ -578,3 +579,36 @@ class ReadOnlyFormRegion(BaseFormRegion):
         for item in range(len(labels)):
             self._dynamic_properties[labels[item]] = field_values[item]
         return self._dynamic_properties
+
+
+class MembershipFormRegion(BaseFormRegion):
+
+    _available_locator = (by.By.CSS_SELECTOR, '.available_members > ul')
+    _allocated_locator = (by.By.CSS_SELECTOR, '.members > ul')
+    _name_sublocator = (by.By.CSS_SELECTOR, 'li.member > span.display_name')
+    _add_remove_sublocator = (by.By.CSS_SELECTOR,
+                              'li.active > a[href="#add_remove"]')
+
+    def _get_item_name(self, element):
+        return element.find_element(*self._name_sublocator).text
+
+    @property
+    def available_items(self):
+        items = self._wait_until(
+            lambda _: self._get_elements(*self._available_locator))
+        return {self._get_item_name(el): el for el in items}
+
+    @property
+    def allocated_items(self):
+        return {self._get_item_name(el): el for el in
+                self._get_elements(*self._allocated_locator)}
+
+    def allocate_item(self, name):
+        item = self.available_items[name]
+        allocate_btn = item.find_element(*self._add_remove_sublocator)
+        allocate_btn.click()
+
+    def deallocate_item(self, name):
+        item = self.allocated_items[name]
+        deallocate_btn = item.find_element(*self._add_remove_sublocator)
+        deallocate_btn.click()
