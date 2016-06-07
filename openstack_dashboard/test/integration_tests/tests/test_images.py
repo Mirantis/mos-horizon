@@ -53,6 +53,23 @@ class TestImagesBasic(helpers.TestCase):
         self.image_create()
         self.image_delete(self.IMAGE_NAME)
 
+    def test_delete_images(self):
+        names = [self.IMAGE_NAME + str(i) for i in range(3)]
+        for name in names:
+            images_page = self.image_create(name)
+
+        name = names.pop()
+        images_page.delete_images(name)
+        self.assertTrue(images_page.find_message_and_dismiss(messages.SUCCESS))
+        self.assertFalse(images_page.find_message_and_dismiss(messages.ERROR))
+        self.assertFalse(images_page.is_image_present(name))
+
+        images_page.delete_images(*names)
+        self.assertTrue(images_page.find_message_and_dismiss(messages.SUCCESS))
+        self.assertFalse(images_page.find_message_and_dismiss(messages.ERROR))
+        self.assertSequenceFalse(
+            [images_page.is_image_present(name) for name in names])
+
     def test_image_create_delete_from_local_file(self):
         """tests the image creation and deletion functionalities:
         * downloads image from horizon.conf stated in http_image
@@ -170,10 +187,10 @@ class TestImagesBasic(helpers.TestCase):
             # The below action will generate exception since the bind fails.
             # But only ValueError with message below is expected here.
             with self.assertRaisesRegexp(ValueError, 'Could not bind method'):
-                images_page.delete_image_via_row_action(self.IMAGE_NAME)
+                images_page.delete_image(self.IMAGE_NAME)
 
             # Try to delete image. That should not be possible now.
-            images_page.delete_image(self.IMAGE_NAME)
+            images_page.delete_images(self.IMAGE_NAME)
             self.assertFalse(
                 images_page.find_message_and_dismiss(messages.SUCCESS))
             self.assertTrue(
