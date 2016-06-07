@@ -64,7 +64,7 @@ class ImagesTable(tables.TableRegion):
                                 field_mappings=self.CREATE_IMAGE_FORM_FIELDS)
 
     @tables.bind_table_action('delete')
-    def delete_image(self, delete_button):
+    def delete_images(self, delete_button):
         delete_button.click()
         return forms.BaseFormRegion(self.driver, self.conf)
 
@@ -88,7 +88,7 @@ class ImagesTable(tables.TableRegion):
         return forms.MetadataFormRegion(self.driver, self.conf)
 
     @tables.bind_row_action('delete')
-    def delete_image_via_row_action(self, delete_button, row):
+    def delete_image(self, delete_button, row):
         delete_button.click()
         return forms.BaseFormRegion(self.driver, self.conf)
 
@@ -143,10 +143,10 @@ class ImagesPage(basepage.BaseNavigationPage):
             create_image_form.protected.mark()
         create_image_form.submit()
 
-    def delete_image(self, name):
-        row = self._get_row_with_image_name(name)
-        row.mark()
-        confirm_delete_images_form = self.images_table.delete_image()
+    def delete_images(self, *names):
+        for name in names:
+            self._get_row_with_image_name(name).mark()
+        confirm_delete_images_form = self.images_table.delete_images()
         confirm_delete_images_form.submit()
 
     def add_custom_metadata(self, name, metadata):
@@ -198,9 +198,9 @@ class ImagesPage(basepage.BaseNavigationPage):
 
         confirm_edit_images_form.submit()
 
-    def delete_image_via_row_action(self, name):
+    def delete_image(self, name):
         row = self._get_row_with_image_name(name)
-        delete_image_form = self.images_table.delete_image_via_row_action(row)
+        delete_image_form = self.images_table.delete_image(row)
         delete_image_form.submit()
 
     def is_image_present(self, name):
