@@ -32,6 +32,16 @@ class TestVolumeSnapshotsBasic(helpers.TestCase):
         self.assertTrue(volumes_page.is_volume_status(self.VOLUME_NAME,
                                                       'Available'))
 
+        def cleanup():
+            volumes_snapshot_page = \
+                self.home_pg.go_to_compute_volumes_volumesnapshotspage()
+            volumes_page = volumes_snapshot_page.switch_to_volumes_tab()
+            volumes_page.delete_volume(self.VOLUME_NAME)
+            volumes_page.find_message_and_dismiss(messages.SUCCESS)
+            self.assertTrue(volumes_page.is_volume_deleted(self.VOLUME_NAME))
+
+        self.addCleanup(cleanup)
+
     def test_create_edit_delete_volume_snapshot(self):
         """Test checks create/delete volume snapshot action
             Steps:
@@ -157,16 +167,6 @@ class TestVolumeSnapshotsBasic(helpers.TestCase):
         for name in snapshot_names:
             volumes_snapshot_page.is_volume_snapshot_deleted(name)
 
-    def tearDown(self):
-        """Clean up: delete volume"""
-        volumes_snapshot_page = \
-            self.home_pg.go_to_compute_volumes_volumesnapshotspage()
-        volumes_page = volumes_snapshot_page.switch_to_volumes_tab()
-        volumes_page.delete_volume(self.VOLUME_NAME)
-        volumes_page.find_message_and_dismiss(messages.SUCCESS)
-        self.assertTrue(volumes_page.is_volume_deleted(self.VOLUME_NAME))
-        super(TestVolumeSnapshotsBasic, self).tearDown()
-
 
 class TestVolumeSnapshotsAdmin(helpers.AdminTestCase,
                                TestVolumeSnapshotsBasic):
@@ -196,6 +196,19 @@ class TestVolumeSnapshotsAdvanced(helpers.TestCase):
         volumes_page.find_message_and_dismiss(messages.INFO)
         self.assertTrue(volumes_page.is_volume_status(self.VOLUME_NAME,
                                                       'Available'))
+
+        def cleanup():
+            volumes_snapshot_page = \
+                self.home_pg.go_to_compute_volumes_volumesnapshotspage()
+            volumes_page = volumes_snapshot_page.switch_to_volumes_tab()
+            volumes_page.delete_volume(self.VOLUME_NAME)
+            self.assertTrue(
+                volumes_page.find_message_and_dismiss(messages.SUCCESS))
+            self.assertFalse(
+                volumes_page.find_message_and_dismiss(messages.ERROR))
+            self.assertTrue(volumes_page.is_volume_deleted(self.VOLUME_NAME))
+
+        self.addCleanup(cleanup)
 
     def test_create_volume_from_snapshot(self):
         """Test checks possibility to create volume from snapshot
@@ -237,15 +250,3 @@ class TestVolumeSnapshotsAdvanced(helpers.TestCase):
             volumes_page.find_message_and_dismiss(messages.SUCCESS))
         self.assertFalse(volumes_page.find_message_and_dismiss(messages.ERROR))
         self.assertTrue(volumes_page.is_volume_deleted(new_volume))
-
-    def tearDown(self):
-        """Clean up: delete volume"""
-        volumes_snapshot_page = \
-            self.home_pg.go_to_compute_volumes_volumesnapshotspage()
-        volumes_page = volumes_snapshot_page.switch_to_volumes_tab()
-        volumes_page.delete_volume(self.VOLUME_NAME)
-        self.assertTrue(
-            volumes_page.find_message_and_dismiss(messages.SUCCESS))
-        self.assertFalse(volumes_page.find_message_and_dismiss(messages.ERROR))
-        self.assertTrue(volumes_page.is_volume_deleted(self.VOLUME_NAME))
-        super(TestVolumeSnapshotsAdvanced, self).tearDown()
