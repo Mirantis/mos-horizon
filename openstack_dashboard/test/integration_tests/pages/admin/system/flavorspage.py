@@ -39,7 +39,12 @@ class FlavorsTable(tables.TableRegion):
             field_mappings=self.CREATE_FLAVOR_FORM_FIELDS)
 
     @tables.bind_table_action('delete')
-    def delete_flavor(self, delete_button):
+    def delete_flavors(self, delete_button):
+        delete_button.click()
+        return forms.BaseFormRegion(self.driver, self.conf, None)
+
+    @tables.bind_row_action('delete')
+    def delete_flavor(self, delete_button, row):
         delete_button.click()
         return forms.BaseFormRegion(self.driver, self.conf, None)
 
@@ -116,10 +121,15 @@ class FlavorsPage(basepage.BaseNavigationPage):
             edit_flavor_form.swap_mb.value = swap_disk
         edit_flavor_form.submit()
 
+    def delete_flavors(self, *names):
+        for name in names:
+            self._get_flavor_row(name).mark()
+        confirm_delete_flavors_form = self.flavors_table.delete_flavors()
+        confirm_delete_flavors_form.submit()
+
     def delete_flavor(self, name):
         row = self._get_flavor_row(name)
-        row.mark()
-        confirm_delete_flavors_form = self.flavors_table.delete_flavor()
+        confirm_delete_flavors_form = self.flavors_table.delete_flavor(row)
         confirm_delete_flavors_form.submit()
 
     def is_flavor_present(self, name):
