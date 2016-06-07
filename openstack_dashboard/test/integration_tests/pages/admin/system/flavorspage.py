@@ -27,6 +27,10 @@ class FlavorsTable(tables.TableRegion):
                                   "disk_gb", "eph_gb", "swap_mb"),
                                  ("all_projects", "selected_projects"))
 
+    EDIT_FLAVOR_FORM_FIELDS = (("name", "vcpus", "memory_mb", "disk_gb",
+                                "eph_gb", "swap_mb"),
+                               ("all_projects", "selected_projects"))
+
     @tables.bind_table_action('create')
     def create_flavor(self, create_button):
         create_button.click()
@@ -38,6 +42,13 @@ class FlavorsTable(tables.TableRegion):
     def delete_flavor(self, delete_button):
         delete_button.click()
         return forms.BaseFormRegion(self.driver, self.conf, None)
+
+    @tables.bind_row_action('update')
+    def edit_flavor(self, edit_button, row):
+        edit_button.click()
+        return forms.TabbedFormRegion(
+            self.driver, self.conf,
+            field_mappings=self.EDIT_FLAVOR_FORM_FIELDS)
 
     @tables.bind_row_action('update_metadata')
     def update_metadata(self, metadata_button, row):
@@ -79,6 +90,24 @@ class FlavorsPage(basepage.BaseNavigationPage):
         create_flavor_form.eph_gb.value = ephemeral_disk
         create_flavor_form.swap_mb.value = swap_disk
         create_flavor_form.submit()
+
+    def edit_flavor(self, name, new_name=None, vcpus=None, ram=None,
+                    root_disk=None, ephemeral_disk=None, swap_disk=None):
+        row = self._get_flavor_row(name)
+        edit_flavor_form = self.flavors_table.edit_flavor(row)
+        if new_name:
+            edit_flavor_form.name.text = new_name
+        if vcpus:
+            edit_flavor_form.vcpus.value = vcpus
+        if ram:
+            edit_flavor_form.memory_mb.value = ram
+        if root_disk:
+            edit_flavor_form.disk_gb.value = root_disk
+        if ephemeral_disk:
+            edit_flavor_form.eph_gb.value = ephemeral_disk
+        if swap_disk:
+            edit_flavor_form.swap_mb.value = swap_disk
+        edit_flavor_form.submit()
 
     def delete_flavor(self, name):
         row = self._get_flavor_row(name)
