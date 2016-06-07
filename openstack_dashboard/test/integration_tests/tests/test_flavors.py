@@ -17,16 +17,16 @@ from openstack_dashboard.test.integration_tests.regions import messages
 class TestFlavors(helpers.AdminTestCase):
     FLAVOR_NAME = helpers.gen_random_resource_name("flavor")
 
-    def flavor_create(self, selected_projects=None):
+    def flavor_create(self, name=None, selected_projects=None):
+        name = name or self.FLAVOR_NAME
         flavors_page = self.home_pg.go_to_system_flavorspage()
-        flavors_page.create_flavor(name=self.FLAVOR_NAME, vcpus=1, ram=1024,
-                                   root_disk=20, ephemeral_disk=0,
-                                   swap_disk=0,
+        flavors_page.create_flavor(name=name, vcpus=1, ram=1024, root_disk=20,
+                                   ephemeral_disk=0, swap_disk=0,
                                    selected_projects=selected_projects)
         self.assertTrue(
             flavors_page.find_message_and_dismiss(messages.SUCCESS))
         self.assertFalse(flavors_page.find_message_and_dismiss(messages.ERROR))
-        self.assertTrue(flavors_page.is_flavor_present(self.FLAVOR_NAME))
+        self.assertTrue(flavors_page.is_flavor_present(name))
         return flavors_page
 
     def flavor_delete(self, name=None):
@@ -114,3 +114,22 @@ class TestFlavors(helpers.AdminTestCase):
             launch_instance_form.flavors.available_items.keys()
         launch_instance_form.cancel()
         return available_flavor_names
+
+    def test_delete_flavors(self):
+        names = [self.FLAVOR_NAME + str(i) for i in range(3)]
+        for name in names:
+            flavors_page = self.flavor_create(name)
+
+        name = names.pop()
+        flavors_page.delete_flavors(name)
+        self.assertTrue(
+            flavors_page.find_message_and_dismiss(messages.SUCCESS))
+        self.assertFalse(flavors_page.find_message_and_dismiss(messages.ERROR))
+        self.assertFalse(flavors_page.is_flavor_present(name))
+
+        flavors_page.delete_flavors(*names)
+        self.assertTrue(
+            flavors_page.find_message_and_dismiss(messages.SUCCESS))
+        self.assertFalse(flavors_page.find_message_and_dismiss(messages.ERROR))
+        self.assertSequenceFalse(
+            [flavors_page.is_flavor_present(name) for name in names])
