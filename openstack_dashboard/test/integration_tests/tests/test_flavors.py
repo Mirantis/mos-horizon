@@ -28,13 +28,14 @@ class TestFlavors(helpers.AdminTestCase):
         self.assertTrue(flavors_page.is_flavor_present(self.FLAVOR_NAME))
         return flavors_page
 
-    def flavor_delete(self):
+    def flavor_delete(self, name=None):
+        name = name or self.FLAVOR_NAME
         flavors_page = self.home_pg.go_to_system_flavorspage()
-        flavors_page.delete_flavor(self.FLAVOR_NAME)
+        flavors_page.delete_flavor(name)
         self.assertTrue(
             flavors_page.find_message_and_dismiss(messages.SUCCESS))
         self.assertFalse(flavors_page.find_message_and_dismiss(messages.ERROR))
-        self.assertFalse(flavors_page.is_flavor_present(self.FLAVOR_NAME))
+        self.assertFalse(flavors_page.is_flavor_present(name))
 
     def test_flavor_create(self):
         """tests the flavor creation and deletion functionalities:
@@ -71,3 +72,16 @@ class TestFlavors(helpers.AdminTestCase):
                                                      new_metadata)
         self.flavor_delete()
         self.assertSequenceTrue(results)  # custom matcher
+
+    def test_edit_flavor(self):
+        new_flavor_name = 'new-' + self.FLAVOR_NAME
+        flavors_page = self.flavor_create()
+
+        flavors_page.edit_flavor(name=self.FLAVOR_NAME,
+                                 new_name=new_flavor_name)
+        self.assertTrue(
+            flavors_page.find_message_and_dismiss(messages.SUCCESS))
+        self.assertFalse(flavors_page.find_message_and_dismiss(messages.ERROR))
+        self.assertTrue(flavors_page.is_flavor_present(new_flavor_name))
+
+        self.flavor_delete(new_flavor_name)
