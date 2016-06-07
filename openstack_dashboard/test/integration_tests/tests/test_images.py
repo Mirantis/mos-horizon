@@ -355,6 +355,10 @@ class TestImagesAdvanced(TestImagesBasic):
         launch_instance_form.cancel()
         self.assertEqual(flavor_name, expected_flavor_name)
 
+    def test_public_image_visibility(self):
+        image_name = self.CONFIG.image.images_list[0]
+        self.assertTrue(self.images_page.is_image_present(image_name))
+
 
 class TestImagesAdmin(helpers.AdminTestCase, TestImagesBasic):
     """Login as admin user"""
