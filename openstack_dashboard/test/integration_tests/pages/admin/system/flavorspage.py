@@ -25,11 +25,11 @@ class FlavorsTable(tables.TableRegion):
 
     CREATE_FLAVOR_FORM_FIELDS = (("name", "flavor_id", "vcpus", "memory_mb",
                                   "disk_gb", "eph_gb", "swap_mb"),
-                                 ("all_projects", "selected_projects"))
+                                 {"membership": forms.MembershipFormRegion})
 
     EDIT_FLAVOR_FORM_FIELDS = (("name", "vcpus", "memory_mb", "disk_gb",
                                 "eph_gb", "swap_mb"),
-                               ("all_projects", "selected_projects"))
+                               {"membership": forms.MembershipFormRegion})
 
     @tables.bind_table_action('create')
     def create_flavor(self, create_button):
@@ -79,7 +79,8 @@ class FlavorsPage(basepage.BaseNavigationPage):
         return self.flavors_table.get_row(FLAVORS_TABLE_NAME_COLUMN, name)
 
     def create_flavor(self, name, id_=DEFAULT_ID, vcpus=None, ram=None,
-                      root_disk=None, ephemeral_disk=None, swap_disk=None):
+                      root_disk=None, ephemeral_disk=None, swap_disk=None,
+                      selected_projects=None):
         create_flavor_form = self.flavors_table.create_flavor()
         create_flavor_form.name.text = name
         if id_ is not None:
@@ -89,6 +90,12 @@ class FlavorsPage(basepage.BaseNavigationPage):
         create_flavor_form.disk_gb.value = root_disk
         create_flavor_form.eph_gb.value = ephemeral_disk
         create_flavor_form.swap_mb.value = swap_disk
+
+        if selected_projects:
+            create_flavor_form.switch_to(1)
+            for project_name in selected_projects:
+                create_flavor_form.membership.allocate_item(project_name)
+
         create_flavor_form.submit()
 
     def edit_flavor(self, name, new_name=None, vcpus=None, ram=None,
