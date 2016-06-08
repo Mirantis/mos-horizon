@@ -10,6 +10,8 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from selenium.webdriver.common import by
+
 from openstack_dashboard.test.integration_tests.pages import basepage
 from openstack_dashboard.test.integration_tests.regions import forms
 from openstack_dashboard.test.integration_tests.regions import menus
@@ -166,6 +168,25 @@ class InstancesPage(basepage.BaseNavigationPage):
         instance_form.switch_to(3)
         instance_form.networks.allocate_item(name=network)
         instance_form.submit()
+
+    def view_instance(self, name):
+        row = self._get_row_with_instance_name(name)
+        name_link = row.cells['name'].find_element(by.By.CSS_SELECTOR, 'a')
+        name_link.click()
+
+    def view_log_instance(self, name):
+        self.view_instance(name)
+        log_link = self.driver.find_element_by_css_selector(
+            'a[href="?tab=instance_details__log"]')
+        log_link.click()
+        self.wait_till_spinner_disappears()
+
+    def view_console_instance(self, name):
+        self.view_instance(name)
+        console_link = self.driver.find_element_by_css_selector(
+            'a[href="?tab=instance_details__console"]')
+        console_link.click()
+        self.wait_till_spinner_disappears()
 
     def lock_instance(self, name):
         row = self._get_row_with_instance_name(name)
