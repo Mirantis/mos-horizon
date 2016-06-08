@@ -61,7 +61,12 @@ class InstancesTable(tables.TableRegion):
         return InstanceFormNG(self.driver, self.conf)
 
     @tables.bind_table_action('delete')
-    def delete_instance(self, delete_button):
+    def delete_instances(self, delete_button):
+        delete_button.click()
+        return forms.BaseFormRegion(self.driver, self.conf)
+
+    @tables.bind_row_action('delete')
+    def delete_instance(self, delete_button, row):
         delete_button.click()
         return forms.BaseFormRegion(self.driver, self.conf)
 
@@ -161,8 +166,13 @@ class InstancesPage(basepage.BaseNavigationPage):
 
     def delete_instance(self, name):
         row = self._get_row_with_instance_name(name)
-        row.mark()
-        confirm_delete_instances_form = self.instances_table.delete_instance()
+        confirm_delete_form = self.instances_table.delete_instance(row)
+        confirm_delete_form.submit()
+
+    def delete_instances(self, *names):
+        for name in names:
+            self._get_row_with_instance_name(name).mark()
+        confirm_delete_instances_form = self.instances_table.delete_instances()
         confirm_delete_instances_form.submit()
 
     def is_instance_deleted(self, name):

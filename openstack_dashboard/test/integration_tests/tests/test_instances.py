@@ -62,6 +62,35 @@ class TestInstances(helpers.TestCase):
 
         self.delete_instance()
 
+    def test_delete_instances(self):
+        instances_count = 3
+        instance_names = ['{}-{}'.format(self.INSTANCE_NAME, i)
+                          for i in range(1, instances_count + 1)]
+
+        instances_page = self.home_pg.go_to_compute_instancespage()
+        instances_page.create_instance_ng(self.INSTANCE_NAME,
+                                          instance_count=instances_count)
+        self.assertFalse(
+            instances_page.find_message_and_dismiss(messages.ERROR))
+        for name in instance_names:
+            self.assertTrue(instances_page.is_instance_active(name))
+
+        name = instance_names.pop()
+        instances_page.delete_instances(name)
+        self.assertTrue(
+            instances_page.find_message_and_dismiss(messages.SUCCESS))
+        self.assertFalse(
+            instances_page.find_message_and_dismiss(messages.ERROR))
+        self.assertTrue(instances_page.is_instance_deleted(name))
+
+        instances_page.delete_instances(*instance_names)
+        self.assertTrue(
+            instances_page.find_message_and_dismiss(messages.SUCCESS))
+        self.assertFalse(
+            instances_page.find_message_and_dismiss(messages.ERROR))
+        self.assertSequenceTrue([instances_page.is_instance_deleted(name)
+                                for name in instance_names])
+
     def test_instances_pagination(self):
         """This test checks instance pagination
         Steps:
