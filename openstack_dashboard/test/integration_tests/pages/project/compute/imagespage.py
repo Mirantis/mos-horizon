@@ -9,6 +9,9 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
+
+from selenium.webdriver.common import by
+
 from openstack_dashboard.test.integration_tests.pages import basepage
 from openstack_dashboard.test.integration_tests.regions import forms
 from openstack_dashboard.test.integration_tests.regions import tables
@@ -202,6 +205,11 @@ class ImagesPage(basepage.BaseNavigationPage):
         row = self._get_row_with_image_name(name)
         delete_image_form = self.images_table.delete_image(row)
         delete_image_form.submit()
+
+    def view_image(self, name):
+        row = self._get_row_with_image_name(name)
+        name_link = row.cells['name'].find_element(by.By.CSS_SELECTOR, 'a')
+        name_link.click()
 
     def is_image_present(self, name):
         return bool(self._get_row_with_image_name(name))
