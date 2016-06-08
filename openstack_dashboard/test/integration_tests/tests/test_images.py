@@ -10,7 +10,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from openstack_dashboard.test.integration_tests import decorators, helpers
+from openstack_dashboard.test.integration_tests import helpers
 from openstack_dashboard.test.integration_tests.regions import messages
 
 IMAGE_NAME = helpers.gen_random_resource_name("image")
@@ -290,7 +290,6 @@ class TestImagesAdvanced(TestImagesBasic):
         volumes_page.find_message_and_dismiss(messages.ERROR)
         self.assertTrue(volumes_page.is_volume_deleted(target_volume))
 
-    @decorators.skip_new_design
     def test_edit_image_disk_and_ram_size(self):
         """tests that it is not possible to launch instances in case of limits
         * logs in as admin user
@@ -320,14 +319,15 @@ class TestImagesAdvanced(TestImagesBasic):
         self.assertFalse(images_page.find_message_and_dismiss(messages.ERROR))
         self.assertLaunchedFlavorIs('m1.medium', images_page)
 
-        self.image_delete()
+        self.image_delete(IMAGE_NAME)
 
     def assertLaunchedFlavorIs(self, expected_flavor_name, images_page):
         launch_instance_form = images_page.get_launch_instance_form(
             IMAGE_NAME)
-        flavor_name = launch_instance_form.flavor.text
+        launch_instance_form.switch_to(2)
+        flavor_names = launch_instance_form.flavors.available_items.keys()
         launch_instance_form.cancel()
-        self.assertEqual(flavor_name, expected_flavor_name)
+        self.assertIn(expected_flavor_name, flavor_names)
 
     def test_public_image_visibility(self):
         image_name = self.CONFIG.image.images_list[0]
