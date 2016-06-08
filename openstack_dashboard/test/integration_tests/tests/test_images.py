@@ -291,37 +291,6 @@ class TestImagesAdvanced(TestImagesBasic):
         self.assertTrue(volumes_page.is_volume_deleted(target_volume))
 
     @decorators.skip_new_design
-    def test_launch_instance_from_image(self):
-        """This test case checks launch instance from image functionality:
-            Steps:
-            1. Login to Horizon Dashboard as regular user
-            2. Navigate to Project -> Compute -> Images
-            3. Launch new instance from image
-            4. Check that instance is create
-            5. Check that status of newly created instance is Active
-            6. Check that image_name in correct in instances table
-        """
-        images_page = self.images_page
-        source_image = self.CONFIG.image.images_list[0]
-        target_instance = "created_from_{0}".format(source_image)
-        instances_page = images_page.launch_instance_from_image(
-            source_image, target_instance)
-        self.assertTrue(
-            instances_page.find_message_and_dismiss(messages.SUCCESS))
-        self.assertFalse(
-            instances_page.find_message_and_dismiss(messages.ERROR))
-        self.assertTrue(instances_page.is_instance_active(target_instance))
-        actual_image_name = instances_page.get_image_name(target_instance)
-        self.assertEqual(source_image, actual_image_name)
-
-        instances_page.delete_instance(target_instance)
-        self.assertTrue(
-            instances_page.find_message_and_dismiss(messages.SUCCESS))
-        self.assertFalse(
-            instances_page.find_message_and_dismiss(messages.ERROR))
-        self.assertTrue(instances_page.is_instance_deleted(target_instance))
-
-    @decorators.skip_new_design
     def test_edit_image_disk_and_ram_size(self):
         """tests that it is not possible to launch instances in case of limits
         * logs in as admin user
@@ -372,3 +341,31 @@ class TestImagesAdmin(helpers.AdminTestCase, TestImagesBasic):
     @property
     def images_page(self):
         return self.home_pg.go_to_system_imagespage()
+
+    def test_launch_instance_from_image(self):
+        """This test case checks launch instance from image functionality:
+            Steps:
+            1. Login to Horizon Dashboard as regular user
+            2. Navigate to Project -> Compute -> Images
+            3. Launch new instance from image
+            4. Check that instance is create
+            5. Check that status of newly created instance is Active
+            6. Check that image_name in correct in instances table
+        """
+        images_page = self.home_pg.go_to_compute_imagespage()
+        source_image = self.CONFIG.image.images_list[0]
+        target_instance = "created_from_{0}".format(source_image)
+        images_page.launch_instance_from_image(source_image, target_instance)
+        self.assertFalse(
+            images_page.find_message_and_dismiss(messages.ERROR))
+        instances_page = self.home_pg.go_to_system_instancespage()
+        self.assertTrue(instances_page.is_instance_active(target_instance))
+        actual_image_name = instances_page.get_image_name(target_instance)
+        self.assertEqual(source_image, actual_image_name)
+
+        instances_page.delete_instance(target_instance)
+        self.assertTrue(
+            instances_page.find_message_and_dismiss(messages.SUCCESS))
+        self.assertFalse(
+            instances_page.find_message_and_dismiss(messages.ERROR))
+        self.assertTrue(instances_page.is_instance_deleted(target_instance))
