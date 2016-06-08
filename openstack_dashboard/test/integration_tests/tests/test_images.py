@@ -82,6 +82,11 @@ class TestImagesBasic(helpers.TestCase):
             self.image_create(local_file=file_name)
             self.image_delete(self.IMAGE_NAME)
 
+    def test_view_image(self):
+        image_name = self.CONFIG.image.images_list[0]
+        self.images_page.view_image(image_name)
+        assert self.driver.title.startswith(image_name)
+
     def test_images_pagination(self):
         """This test checks images pagination
             Steps:
