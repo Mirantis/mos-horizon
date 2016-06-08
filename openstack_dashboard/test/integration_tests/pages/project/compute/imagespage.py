@@ -17,7 +17,7 @@ from openstack_dashboard.test.integration_tests.regions import forms
 from openstack_dashboard.test.integration_tests.regions import tables
 
 from openstack_dashboard.test.integration_tests.pages.project.compute.\
-    instancespage import InstancesPage
+    instancespage import InstanceFormNG
 from openstack_dashboard.test.integration_tests.pages.project.compute.\
     volumes.volumespage import VolumesPage
 
@@ -29,6 +29,9 @@ DEFAULT_PROTECTION = False
 IMAGES_TABLE_NAME_COLUMN = 'name'
 IMAGES_TABLE_STATUS_COLUMN = 'status'
 IMAGES_TABLE_FORMAT_COLUMN = 'disk_format'
+
+DEFAULT_FLAVOR = 'm1.tiny'
+DEFAULT_NETWORK_NG = "admin_internal_net"
 
 
 class ImagesTable(tables.TableRegion):
@@ -78,12 +81,10 @@ class ImagesTable(tables.TableRegion):
             self.driver, self.conf,
             field_mappings=self.CREATE_VOLUME_FROM_IMAGE_FORM_FIELDS)
 
-    @tables.bind_row_action('launch_image')
+    @tables.bind_row_action('launch_image_ng')
     def launch_instance(self, launch_instance, row):
         launch_instance.click()
-        return forms.TabbedFormRegion(
-            self.driver, self.conf,
-            field_mappings=self.LAUNCH_INSTANCE_FROM_FIELDS)
+        return InstanceFormNG(self.driver, self.conf)
 
     @tables.bind_row_action('update_metadata')
     def update_metadata(self, metadata_button, row):
@@ -245,18 +246,26 @@ class ImagesPage(basepage.BaseNavigationPage):
         create_volume_form.submit()
         return VolumesPage(self.driver, self.conf)
 
-    def launch_instance_from_image(self, name, instance_name,
-                                   instance_count=1, flavor=None):
-        launch_instance = self.get_launch_instance_form(name)
-        launch_instance.availability_zone.value = \
-            self.conf.launch_instances.available_zone
+    def launch_instance_from_image(self, image_name, instance_name,
+                                   availability_zone=None, instance_count=1,
+                                   flavor_size=DEFAULT_FLAVOR,
+                                   network=DEFAULT_NETWORK_NG):
+
+        launch_instance = self.get_launch_instance_form(image_name)
+
+        if not availability_zone:
+            availability_zone = self.conf.launch_instances.available_zone
+
         launch_instance.name.text = instance_name
-        if flavor is None:
-            flavor = self.conf.launch_instances.flavor
-        launch_instance.flavor.text = flavor
-        launch_instance.count.value = instance_count
+        launch_instance.availability_zone.text = availability_zone
+        launch_instance.instance_count.value = instance_count
+
+        launch_instance.switch_to(2)
+        launch_instance.flavors.allocate_item(name=flavor_size)
+
+        launch_instance.switch_to(3)
+        launch_instance.networks.allocate_item(name=network)
         launch_instance.submit()
-        return InstancesPage(self.driver, self.conf)
 
     def get_launch_instance_form(self, name):
         row = self._get_row_with_image_name(name)
