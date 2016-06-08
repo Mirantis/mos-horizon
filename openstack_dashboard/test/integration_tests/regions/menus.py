@@ -397,7 +397,14 @@ class TransferTableMenuRegion(baseregion.BaseRegion):
     def available_items(self):
         items = self._wait_until(
             lambda _: self._get_elements(*self._available_locator))
-        return {self._get_item_name(el): el for el in items}
+        result = {}
+        for item in items:
+            name = self._get_item_name(item)
+            if name:
+                btn = item.find_element(*self._add_remove_sublocator)
+                if 'disabled' not in btn.get_attribute('class'):
+                    result[name] = item
+        return result
 
     @property
     def allocated_items(self):
