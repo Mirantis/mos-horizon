@@ -56,10 +56,17 @@ class TestInstances(helpers.TestCase):
 
         instances_page.create_instance_ng(self.INSTANCE_NAME,
                                           network=self.NETWORK_NG_NAME)
+
+    def create_instance(self):
+        instances_page = self.home_pg.go_to_compute_instancespage()
+        instances_page.create_instance_ng(self.INSTANCE_NAME)
         self.assertFalse(
             instances_page.find_message_and_dismiss(messages.ERROR))
         self.assertTrue(instances_page.is_instance_active(self.INSTANCE_NAME))
+        return instances_page
 
+    def test_create_delete_instance(self):
+        self.create_instance()
         self.delete_instance()
 
     def test_delete_instances(self):
@@ -90,6 +97,23 @@ class TestInstances(helpers.TestCase):
             instances_page.find_message_and_dismiss(messages.ERROR))
         self.assertSequenceTrue([instances_page.is_instance_deleted(name)
                                 for name in instance_names])
+
+    def test_lock_instance(self):
+        instances_page = self.create_instance()
+
+        instances_page.lock_instance(self.INSTANCE_NAME)
+        self.assertTrue(
+            instances_page.find_message_and_dismiss(messages.SUCCESS))
+        self.assertFalse(
+            instances_page.find_message_and_dismiss(messages.ERROR))
+
+        instances_page.unlock_instance(self.INSTANCE_NAME)
+        self.assertTrue(
+            instances_page.find_message_and_dismiss(messages.SUCCESS))
+        self.assertFalse(
+            instances_page.find_message_and_dismiss(messages.ERROR))
+
+        self.delete_instance()
 
     def test_instances_pagination(self):
         """This test checks instance pagination

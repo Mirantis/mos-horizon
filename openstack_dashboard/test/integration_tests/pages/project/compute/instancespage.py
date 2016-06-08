@@ -70,6 +70,14 @@ class InstancesTable(tables.TableRegion):
         delete_button.click()
         return forms.BaseFormRegion(self.driver, self.conf)
 
+    @tables.bind_row_action('lock')
+    def lock_instance(self, lock_button, row):
+        lock_button.click()
+
+    @tables.bind_row_action('unlock')
+    def unlock_instance(self, unlock_button, row):
+        unlock_button.click()
+
 
 class InstancesPage(basepage.BaseNavigationPage):
 
@@ -163,6 +171,14 @@ class InstancesPage(basepage.BaseNavigationPage):
         instance_form.switch_to(3)
         instance_form.networks.allocate_item(name=network)
         instance_form.submit()
+
+    def lock_instance(self, name):
+        row = self._get_row_with_instance_name(name)
+        self.instances_table.lock_instance(row)
+
+    def unlock_instance(self, name):
+        row = self._get_row_with_instance_name(name)
+        self.instances_table.unlock_instance(row)
 
     def delete_instance(self, name):
         row = self._get_row_with_instance_name(name)
