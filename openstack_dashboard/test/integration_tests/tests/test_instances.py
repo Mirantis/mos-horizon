@@ -115,6 +115,16 @@ class TestInstances(helpers.TestCase):
 
         self.delete_instance()
 
+    def test_view_instance(self):
+        instances_page = self.create_instance()
+        instances_page.view_instance(self.INSTANCE_NAME)
+        self.home_pg.go_to_compute_instancespage()
+        instances_page.view_log_instance(self.INSTANCE_NAME)
+        self.home_pg.go_to_compute_instancespage()
+        instances_page.view_console_instance(self.INSTANCE_NAME)
+        self.home_pg.go_to_compute_instancespage()
+        self.delete_instance()
+
     def test_instances_pagination(self):
         """This test checks instance pagination
         Steps:
