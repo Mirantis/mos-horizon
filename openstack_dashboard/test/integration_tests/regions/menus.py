@@ -278,7 +278,10 @@ class TransferTableMenuRegion(baseregion.BaseRegion):
 
     def _get_item_name(self, element):
         cells = element.find_elements(*self._comp_cell_sublocator)
-        return cells and cells[1].text
+        if len(cells) > 1:
+            return cells[1].text
+        else:
+            return None
 
     @property
     def available_items(self):
