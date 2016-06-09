@@ -37,6 +37,8 @@ class VolumesTable(tables.TableRegion):
 
     CREATE_VOLUME_SNAPSHOT_FORM_FIELDS = ("name", "description")
 
+    EXTEND_VOLUME_FORM_FIELDS = ("new_size",)
+
     @tables.bind_table_action('create')
     def create_volume(self, create_button):
         create_button.click()
@@ -72,11 +74,20 @@ class VolumesTable(tables.TableRegion):
         launch_instance.click()
         return InstanceFormNG(self.driver, self.conf)
 
+    @tables.bind_row_action('extend')
+    def extend_volume(self, extend_button, row):
+        extend_button.click()
+        return forms.FormRegion(self.driver, self.conf,
+                                field_mappings=self.EXTEND_VOLUME_FORM_FIELDS)
+
 
 class VolumesPage(basepage.BaseNavigationPage):
 
     VOLUMES_TABLE_NAME_COLUMN = 'name'
     VOLUMES_TABLE_STATUS_COLUMN = 'status'
+    VOLUMES_TABLE_TYPE_COLUMN = 'volume_type'
+    VOLUMES_TABLE_SIZE_COLUMN = 'size'
+    VOLUMES_TABLE_ATTACHED_COLUMN = 'attachments'
 
     def __init__(self, driver, conf):
         super(VolumesPage, self).__init__(driver, conf)
@@ -154,6 +165,11 @@ class VolumesPage(basepage.BaseNavigationPage):
         if volume_source_type == VOLUME_SOURCE_TYPE:
             return volume_form.volume_id, volume_source
 
+    def get_size(self, name):
+        row = self._get_row_with_volume_name(name)
+        size = str(row.cells[self.VOLUMES_TABLE_SIZE_COLUMN].text)
+        return int(filter(str.isdigit, size))
+
     def create_volume_snapshot(self, volume, snapshot, description='test'):
         from openstack_dashboard.test.integration_tests.pages.project.compute.\
             volumes.volumesnapshotspage import VolumesnapshotsPage
@@ -164,6 +180,12 @@ class VolumesPage(basepage.BaseNavigationPage):
             snapshot_form.description.text = description
         snapshot_form.submit()
         return VolumesnapshotsPage(self.driver, self.conf)
+
+    def extend_volume(self, name, new_size):
+        row = self._get_row_with_volume_name(name)
+        extend_volume_form = self.volumes_table.extend_volume(row)
+        extend_volume_form.new_size.value = new_size
+        extend_volume_form.submit()
 
     def launch_instance_from_image(self, volume_name, instance_name,
                                    availability_zone=None, instance_count=1,

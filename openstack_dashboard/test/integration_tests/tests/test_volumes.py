@@ -174,6 +174,41 @@ class TestVolumes(helpers.TestCase):
             volumes_page.find_message_and_dismiss(messages.SUCCESS)
             self.assertTrue(volumes_page.is_volume_deleted(volume_name))
 
+    def test_volume_extend(self):
+        """This test case checks extend volume functionality:
+            Steps:
+            1. Check current volume size
+            2. Extend volume
+            3. Check that no Error messages present
+            4. Check that the volume is still in the list
+            5. Check that the volume size is changed
+        """
+        volumes_page = self.home_pg.go_to_compute_volumes_volumespage()
+        volumes_page.create_volume(self.VOLUME_NAME)
+        self.assertTrue(
+            volumes_page.find_message_and_dismiss(messages.INFO))
+        self.assertFalse(
+            volumes_page.find_message_and_dismiss(messages.ERROR))
+        self.assertTrue(volumes_page.is_volume_present(self.VOLUME_NAME))
+        self.assertTrue(volumes_page.is_volume_status(self.VOLUME_NAME,
+                                                      'Available'))
+
+        orig_size = volumes_page.get_size(self.VOLUME_NAME)
+        volumes_page.extend_volume(self.VOLUME_NAME, orig_size + 1)
+        self.assertTrue(
+            volumes_page.find_message_and_dismiss(messages.INFO))
+        self.assertFalse(
+            volumes_page.find_message_and_dismiss(messages.ERROR))
+        new_size = volumes_page.get_size(self.VOLUME_NAME)
+        self.assertFalse(orig_size >= new_size)
+
+        volumes_page.delete_volume(self.VOLUME_NAME)
+        self.assertTrue(
+            volumes_page.find_message_and_dismiss(messages.SUCCESS))
+        self.assertFalse(
+            volumes_page.find_message_and_dismiss(messages.ERROR))
+        self.assertTrue(volumes_page.is_volume_deleted(self.VOLUME_NAME))
+
 
 class TestAdminVolumes(helpers.AdminTestCase, TestVolumes):
     VOLUME_NAME = helpers.gen_random_resource_name("volume")
