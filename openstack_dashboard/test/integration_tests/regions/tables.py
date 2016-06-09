@@ -97,6 +97,16 @@ class TableRegion(baseregion.BaseRegion):
         return names
 
     @property
+    def column_heads(self):
+        col_heads = {}
+        for element in self._get_elements(*self._columns_names_locator):
+            classes = element.get_attribute('class').split()
+            if NORMAL_COLUMN_CLASS in classes:
+                name = element.get_attribute('data-selenium')
+                col_heads[name] = element
+        return col_heads
+
+    @property
     def footer(self):
         return self._get_element(*self._footer_locator)
 
