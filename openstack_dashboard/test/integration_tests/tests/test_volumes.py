@@ -75,6 +75,36 @@ class TestVolumes(helpers.TestCase):
             form = volumes_page.volumes_table.create_volume()
             form.cancel()
 
+    def test_delete_volumes(self):
+        volume_names = ['{}-{}'.format(self.VOLUME_NAME, i) for i in range(3)]
+        volumes_page = self.home_pg.go_to_compute_volumes_volumespage()
+
+        for volume_name in volume_names:
+            volumes_page.create_volume(volume_name)
+            self.assertTrue(
+                volumes_page.find_message_and_dismiss(messages.INFO))
+            self.assertFalse(
+                volumes_page.find_message_and_dismiss(messages.ERROR))
+            self.assertTrue(volumes_page.is_volume_present(volume_name))
+            self.assertTrue(volumes_page.is_volume_status(volume_name,
+                                                          'Available'))
+
+        volume_name = volume_names.pop()
+        volumes_page.delete_volumes(volume_name)
+        self.assertTrue(
+            volumes_page.find_message_and_dismiss(messages.SUCCESS))
+        self.assertFalse(
+            volumes_page.find_message_and_dismiss(messages.ERROR))
+        self.assertTrue(volumes_page.is_volume_deleted(volume_name))
+
+        volumes_page.delete_volumes(*volume_names)
+        self.assertTrue(
+            volumes_page.find_message_and_dismiss(messages.SUCCESS))
+        self.assertFalse(
+            volumes_page.find_message_and_dismiss(messages.ERROR))
+        self.assertSequenceTrue(volumes_page.is_volume_deleted(volume_name)
+                                for volume_name in volume_names)
+
     def test_volumes_pagination(self):
         """This test checks volumes pagination
             Steps:

@@ -40,7 +40,12 @@ class VolumesTable(tables.TableRegion):
             field_mappings=self.CREATE_VOLUME_FROM_IMAGE_FORM_FIELDS)
 
     @tables.bind_table_action('delete')
-    def delete_volume(self, delete_button):
+    def delete_volumes(self, delete_button):
+        delete_button.click()
+        return forms.BaseFormRegion(self.driver, self.conf)
+
+    @tables.bind_row_action('delete')
+    def delete_volume(self, delete_button, row):
         delete_button.click()
         return forms.BaseFormRegion(self.driver, self.conf)
 
@@ -98,10 +103,15 @@ class VolumesPage(basepage.BaseNavigationPage):
                 self.conf.launch_instances.available_zone
         volume_form.submit()
 
+    def delete_volumes(self, *names):
+        for name in names:
+            self._get_row_with_volume_name(name).mark()
+        confirm_delete_volumes_form = self.volumes_table.delete_volumes()
+        confirm_delete_volumes_form.submit()
+
     def delete_volume(self, name):
         row = self._get_row_with_volume_name(name)
-        row.mark()
-        confirm_delete_volumes_form = self.volumes_table.delete_volume()
+        confirm_delete_volumes_form = self.volumes_table.delete_volume(row)
         confirm_delete_volumes_form.submit()
 
     def edit_volume(self, name, new_name=None, description=None):
