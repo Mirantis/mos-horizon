@@ -11,11 +11,16 @@
 #    under the License.
 
 from openstack_dashboard.test.integration_tests.pages import basepage
+from openstack_dashboard.test.integration_tests.pages.project.compute.\
+    instancespage import InstanceFormNG
 from openstack_dashboard.test.integration_tests.regions import forms
 from openstack_dashboard.test.integration_tests.regions import tables
 
 VOLUME_SOURCE_TYPE = 'Volume'
 IMAGE_SOURCE_TYPE = 'Image'
+
+DEFAULT_FLAVOR = 'm1.tiny'
+DEFAULT_NETWORK_NG = "admin_internal_net"
 
 
 class VolumesTable(tables.TableRegion):
@@ -61,6 +66,11 @@ class VolumesTable(tables.TableRegion):
         return forms.FormRegion(
             self.driver, self.conf,
             field_mappings=self.CREATE_VOLUME_SNAPSHOT_FORM_FIELDS)
+
+    @tables.bind_row_action('launch_volume_ng')
+    def launch_instance(self, launch_instance, row):
+        launch_instance.click()
+        return InstanceFormNG(self.driver, self.conf)
 
 
 class VolumesPage(basepage.BaseNavigationPage):
@@ -154,3 +164,25 @@ class VolumesPage(basepage.BaseNavigationPage):
             snapshot_form.description.text = description
         snapshot_form.submit()
         return VolumesnapshotsPage(self.driver, self.conf)
+
+    def launch_instance_from_image(self, volume_name, instance_name,
+                                   availability_zone=None, instance_count=1,
+                                   flavor_size=DEFAULT_FLAVOR,
+                                   network=DEFAULT_NETWORK_NG):
+
+        row = self._get_row_with_volume_name(volume_name)
+        launch_instance = self.volumes_table.launch_instance(row)
+
+        if not availability_zone:
+            availability_zone = self.conf.launch_instances.available_zone
+
+        launch_instance.name.text = instance_name
+        launch_instance.availability_zone.text = availability_zone
+        launch_instance.instance_count.value = instance_count
+
+        launch_instance.switch_to(2)
+        launch_instance.flavors.allocate_item(name=flavor_size)
+
+        launch_instance.switch_to(3)
+        launch_instance.networks.allocate_item(name=network)
+        launch_instance.submit()

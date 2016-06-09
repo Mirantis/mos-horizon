@@ -181,3 +181,37 @@ class TestAdminVolumes(helpers.AdminTestCase, TestVolumes):
     @property
     def volumes_page(self):
         return self.home_pg.go_to_system_volumes_volumespage()
+
+    def test_launch_volume_as_instance(self):
+        volumes_page = self.home_pg.go_to_compute_volumes_volumespage()
+        volumes_page.create_volume(self.VOLUME_NAME)
+        self.assertTrue(
+            volumes_page.find_message_and_dismiss(messages.INFO))
+        self.assertFalse(
+            volumes_page.find_message_and_dismiss(messages.ERROR))
+        self.assertTrue(volumes_page.is_volume_present(self.VOLUME_NAME))
+        self.assertTrue(volumes_page.is_volume_status(self.VOLUME_NAME,
+                                                      'Available'))
+
+        target_instance = "created_from_{0}".format(self.VOLUME_NAME)
+        volumes_page.launch_instance_from_image(self.VOLUME_NAME,
+                                                target_instance)
+        self.assertFalse(
+            volumes_page.find_message_and_dismiss(messages.ERROR))
+        instances_page = self.home_pg.go_to_system_instancespage()
+        self.assertTrue(instances_page.is_instance_active(target_instance))
+
+        instances_page.delete_instance(target_instance)
+        self.assertTrue(
+            instances_page.find_message_and_dismiss(messages.SUCCESS))
+        self.assertFalse(
+            instances_page.find_message_and_dismiss(messages.ERROR))
+        self.assertTrue(instances_page.is_instance_deleted(target_instance))
+
+        volumes_page = self.volumes_page
+        volumes_page.delete_volume(self.VOLUME_NAME)
+        self.assertTrue(
+            volumes_page.find_message_and_dismiss(messages.SUCCESS))
+        self.assertFalse(
+            volumes_page.find_message_and_dismiss(messages.ERROR))
+        self.assertTrue(volumes_page.is_volume_deleted(self.VOLUME_NAME))
