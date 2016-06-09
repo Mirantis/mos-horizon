@@ -46,8 +46,13 @@ class UsersTable(tables.TableRegion):
     def disable_enable_user(self, disable_enable_user_button, row):
         disable_enable_user_button.click()
 
+    @tables.bind_row_action('delete')
+    def delete_user(self, delete_button, row):
+        delete_button.click()
+        return forms.BaseFormRegion(self.driver, self.conf)
+
     @tables.bind_table_action('delete')
-    def delete_user(self, delete_button):
+    def delete_users(self, delete_button):
         delete_button.click()
         return forms.BaseFormRegion(self.driver, self.conf)
 
@@ -114,8 +119,13 @@ class UsersPage(basepage.BaseNavigationPage):
 
     def delete_user(self, name):
         row = self._get_row_with_user_name(name)
-        row.mark()
-        confirm_delete_users_form = self.users_table.delete_user()
+        confirm_delete_users_form = self.users_table.delete_user(row)
+        confirm_delete_users_form.submit()
+
+    def delete_users(self, *names):
+        for name in names:
+            self._get_row_with_user_name(name).mark()
+        confirm_delete_users_form = self.users_table.delete_users()
         confirm_delete_users_form.submit()
 
     def is_user_present(self, name):
