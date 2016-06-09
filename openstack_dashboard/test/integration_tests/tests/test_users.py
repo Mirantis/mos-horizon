@@ -85,6 +85,11 @@ class TestUser(helpers.AdminTestCase):
         self.assertEqual(users_page.visible_user_names,
                          list(reversed(sorted(current_user_names))))
 
+    def test_restricted_admin_actions_dropdown_menu(self):
+        users_page = self.home_pg.go_to_identity_userspage()
+        admin_actions = users_page.available_row_actions('admin')
+        self.assertEqual(admin_actions, ['Edit', 'Change Password'])
+
     def test_impossible_delete_admin(self):
         users_page = self.home_pg.go_to_identity_userspage()
         users_page.delete_users('admin')
@@ -205,7 +210,6 @@ class TestUser(helpers.AdminTestCase):
                              find_message_and_dismiss(messages.ERROR))
 
         self.delete_user(users_page, username)
-
 
 class TestDemoUser(helpers.TestCase):
 
