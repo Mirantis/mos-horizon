@@ -59,6 +59,15 @@ class TestUser(helpers.AdminTestCase):
         self.create_user(users_page, username, self.TEST_PASSWORD)
         self.delete_user(users_page, username)
 
+    def test_filter_users(self):
+        username = self.username
+        users_page = self.home_pg.go_to_identity_userspage()
+        self.create_user(users_page, username, self.TEST_PASSWORD)
+        users_page.users_table.filter('user')
+        user_names = users_page.visible_user_names
+        self.assertSequenceTrue('user' in name for name in user_names)
+        self.delete_user(users_page, username)
+
     def test_delete_users(self):
         user_names = [self.username for _ in range(3)]
         users_page = self.home_pg.go_to_identity_userspage()
@@ -75,8 +84,8 @@ class TestUser(helpers.AdminTestCase):
         users_page.delete_users(*user_names)
         self.assertTrue(users_page.find_message_and_dismiss(messages.SUCCESS))
         self.assertFalse(users_page.find_message_and_dismiss(messages.ERROR))
-        self.assertSequenceFalse([users_page.is_user_present(user_name)
-                                  for user_name in user_names])
+        self.assertSequenceFalse(users_page.is_user_present(user_name)
+                                 for user_name in user_names)
 
     def test_change_password_for_user(self):
         """Test to verify password change for newly created user.
