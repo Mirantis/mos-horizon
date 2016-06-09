@@ -61,6 +61,21 @@ class UsersTable(tables.TableRegion):
         delete_button.click()
         return forms.BaseFormRegion(self.driver, self.conf)
 
+    def available_row_actions(self, row):
+        primary_selector = (by.By.CSS_SELECTOR,
+                            'td.actions_column *.btn:nth-child(1)')
+        secondary_locator = \
+            (by.By.CSS_SELECTOR,
+             'td.actions_column li > a, td.actions_column li > button')
+
+        result = [row._get_element(
+            *primary_selector).get_attribute('innerHTML').strip()]
+
+        for element in row._get_elements(*secondary_locator):
+            if element.is_enabled():
+                result.append(element.get_attribute('innerHTML').strip())
+
+        return result
 
 class UsersPage(basepage.BaseNavigationPage):
 
@@ -121,6 +136,10 @@ class UsersPage(basepage.BaseNavigationPage):
         change_password_form.password.text = new_passwd
         change_password_form.confirm_password.text = new_passwd
         change_password_form.submit()
+
+    def available_row_actions(self, name):
+        row = self._get_row_with_user_name(name)
+        return self.users_table.available_row_actions(row)
 
     def delete_user(self, name):
         row = self._get_row_with_user_name(name)
