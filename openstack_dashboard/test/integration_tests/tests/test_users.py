@@ -68,6 +68,19 @@ class TestUser(helpers.AdminTestCase):
         self.assertSequenceTrue('user' in name for name in user_names)
         self.delete_user(users_page, username)
 
+    def test_sort_users(self):
+        users_page = self.home_pg.go_to_identity_userspage()
+        current_user_names = users_page.visible_user_names
+        col_user_name = users_page.users_table.column_heads['name']
+
+        col_user_name.click()
+        self.assertEqual(users_page.visible_user_names,
+                         sorted(current_user_names))
+
+        col_user_name.click()
+        self.assertEqual(users_page.visible_user_names,
+                         list(reversed(sorted(current_user_names))))
+
     def test_impossible_delete_admin(self):
         users_page = self.home_pg.go_to_identity_userspage()
         users_page.delete_users('admin')
