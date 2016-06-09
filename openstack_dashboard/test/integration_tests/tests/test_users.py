@@ -10,7 +10,11 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from selenium.common.exceptions import NoSuchElementException
+
 from openstack_dashboard.test.integration_tests import helpers
+from openstack_dashboard.test.integration_tests.pages.identity.userspage \
+    import UsersPage
 from openstack_dashboard.test.integration_tests.regions import messages
 
 
@@ -201,3 +205,16 @@ class TestUser(helpers.AdminTestCase):
                              find_message_and_dismiss(messages.ERROR))
 
         self.delete_user(users_page, username)
+
+
+class TestDemoUser(helpers.TestCase):
+
+    def test_unavailable_users_list_for_unprivileged_user(self):
+        self.assertRaises(NoSuchElementException,
+                          self.home_pg.go_to_identity_userspage)
+        users_url = self.home_pg.conf.dashboard.dashboard_url.rstrip('/') + \
+            '/identity/users/'
+        self.driver.get(users_url)
+        users_page = UsersPage(self.driver, self.home_pg.conf)
+        self.assertTrue(users_page.find_message_and_dismiss(messages.INFO))
+        self.assertFalse(users_page.visible_user_names)
