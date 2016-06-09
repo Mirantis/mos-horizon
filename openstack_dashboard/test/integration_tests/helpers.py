@@ -73,10 +73,12 @@ def gen_temporary_file(name='', suffix='.qcow2', size=10485760):
 class AssertsMixin(object):
 
     def assertSequenceTrue(self, actual):
-        return self.assertEqual(list(actual), [True] * len(actual))
+        actual = list(actual)
+        return self.assertEqual(actual, [True] * len(actual))
 
     def assertSequenceFalse(self, actual):
-        return self.assertEqual(list(actual), [False] * len(actual))
+        actual = list(actual)
+        return self.assertEqual(actual, [False] * len(actual))
 
 
 class BaseTestCase(testtools.TestCase, AssertsMixin):

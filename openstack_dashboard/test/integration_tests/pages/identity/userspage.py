@@ -10,6 +10,8 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from selenium.webdriver.common import by
+
 from openstack_dashboard.test.integration_tests.pages import basepage
 from openstack_dashboard.test.integration_tests.regions import forms
 from openstack_dashboard.test.integration_tests.regions import tables
@@ -21,6 +23,9 @@ class UsersTable(tables.TableRegion):
                                "confirm_password", "project", "role_id")
     EDIT_USER_FORM_FIELDS = ("name", "email", "project")
     CHANGE_PASSWORD_FORM_FIELDS = ("password", "confirm_password", "name")
+
+    _search_button_locator = (by.By.CSS_SELECTOR,
+                              'div.table_search span.fa-search')
 
     @tables.bind_table_action('create')
     def create_user(self, create_button):
@@ -138,3 +143,8 @@ class UsersPage(basepage.BaseNavigationPage):
             return row.cells[self.USERS_TABLE_ENABLED_COLUMN].text == 'No'
         elif action == 'enable':
             return row.cells[self.USERS_TABLE_ENABLED_COLUMN].text == 'Yes'
+
+    @property
+    def visible_user_names(self):
+        names = [row.cells['name'].text for row in self.users_table.rows]
+        return filter(None, names)
