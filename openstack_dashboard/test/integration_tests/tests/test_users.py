@@ -68,6 +68,13 @@ class TestUser(helpers.AdminTestCase):
         self.assertSequenceTrue('user' in name for name in user_names)
         self.delete_user(users_page, username)
 
+    def test_impossible_delete_admin(self):
+        users_page = self.home_pg.go_to_identity_userspage()
+        users_page.delete_users('admin')
+        self.assertFalse(users_page.find_message_and_dismiss(messages.SUCCESS))
+        self.assertTrue(users_page.find_message_and_dismiss(messages.ERROR))
+        self.assertTrue(users_page.is_user_present('admin'))
+
     def test_delete_users(self):
         user_names = [self.username for _ in range(3)]
         users_page = self.home_pg.go_to_identity_userspage()
