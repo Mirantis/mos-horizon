@@ -335,3 +335,58 @@ class TestAdminVolumes(helpers.AdminTestCase, TestVolumes):
         self.assertFalse(
             volumes_page.find_message_and_dismiss(messages.ERROR))
         self.assertTrue(volumes_page.is_volume_deleted(self.VOLUME_NAME))
+
+    def test_manage_volume_attachments(self):
+        """This test case checks attach/detach actions for volume
+            Steps:
+            1. Login to Horizon Dashboard as horizon user
+            2. Navigate to Project -> Compute -> Instances, create instance
+            3. Navigate to Project -> Compute -> Volumes, create volume
+            4. Attach volume to instance from step2
+            5. Check that volume status and link to instance
+            6. Detach volume from instance
+            7. Check volume status
+            8. Delete volume and instance
+        """
+        instance_name = helpers.gen_random_resource_name('instance')
+        instances_page = self.home_pg.go_to_compute_instancespage()
+        instances_page.create_instance_ng(instance_name)
+        instances_page.find_message_and_dismiss(messages.SUCCESS)
+        self.assertFalse(
+            instances_page.find_message_and_dismiss(messages.ERROR))
+        self.assertTrue(instances_page.is_instance_active(instance_name))
+
+        volumes_page = self.home_pg.go_to_compute_volumes_volumespage()
+        volumes_page.create_volume(self.VOLUME_NAME)
+        volumes_page.find_message_and_dismiss(messages.INFO)
+        self.assertFalse(volumes_page.find_message_and_dismiss(messages.ERROR))
+        self.assertTrue(volumes_page.is_volume_status(self.VOLUME_NAME,
+                                                      'Available'))
+
+        volumes_page.attach_volume_to_instance(self.VOLUME_NAME, instance_name)
+        volumes_page.find_message_and_dismiss(messages.INFO)
+        self.assertFalse(volumes_page.find_message_and_dismiss(messages.ERROR))
+        self.assertTrue(volumes_page.is_volume_status(self.VOLUME_NAME,
+                                                      'In-use'))
+        self.assertTrue(
+            volumes_page.is_volume_attached_to_instance(self.VOLUME_NAME,
+                                                        instance_name))
+
+        volumes_page.detach_volume_from_instance(self.VOLUME_NAME,
+                                                 instance_name)
+        volumes_page.find_message_and_dismiss(messages.SUCCESS)
+        self.assertFalse(volumes_page.find_message_and_dismiss(messages.ERROR))
+        self.assertTrue(volumes_page.is_volume_status(self.VOLUME_NAME,
+                                                      'Available'))
+
+        volumes_page.delete_volume(self.VOLUME_NAME)
+        volumes_page.find_message_and_dismiss(messages.SUCCESS)
+        self.assertFalse(volumes_page.find_message_and_dismiss(messages.ERROR))
+        self.assertTrue(volumes_page.is_volume_deleted(self.VOLUME_NAME))
+
+        instances_page = self.home_pg.go_to_compute_instancespage()
+        instances_page.delete_instance(instance_name)
+        instances_page.find_message_and_dismiss(messages.SUCCESS)
+        self.assertFalse(
+            instances_page.find_message_and_dismiss(messages.ERROR))
+        self.assertTrue(instances_page.is_instance_deleted(instance_name))
