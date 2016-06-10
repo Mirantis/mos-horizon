@@ -10,7 +10,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from selenium.webdriver.common import by
+from selenium.webdriver.common.by import By
 
 from openstack_dashboard.test.integration_tests.pages import basepage
 from openstack_dashboard.test.integration_tests.pages.project.compute.\
@@ -90,6 +90,11 @@ class VolumesTable(tables.TableRegion):
         return forms.FormRegion(self.driver, self.conf,
                                 field_mappings=self.VOLUME_TYPE_FORM_FIELDS)
 
+    @tables.bind_row_action('attachments')
+    def manage_attachments(self, manage_attachments, row):
+        manage_attachments.click()
+        return VolumeAttachForm(self.driver, self.conf)
+
 
 class VolumesPage(basepage.BaseNavigationPage):
 
@@ -138,7 +143,7 @@ class VolumesPage(basepage.BaseNavigationPage):
 
     def view_volume(self, name):
         row = self._get_row_with_volume_name(name)
-        name_link = row.cells['name'].find_element(by.By.CSS_SELECTOR, 'a')
+        name_link = row.cells['name'].find_element(By.CSS_SELECTOR, 'a')
         name_link.click()
 
     def set_type(self, name, volume_type=None):
@@ -232,3 +237,54 @@ class VolumesPage(basepage.BaseNavigationPage):
         launch_instance.switch_to(3)
         launch_instance.networks.allocate_item(name=network)
         launch_instance.submit()
+
+    def attach_volume_to_instance(self, volume, instance):
+        row = self._get_row_with_volume_name(volume)
+        attach_form = self.volumes_table.manage_attachments(row)
+        attach_form.attach_instance(instance)
+
+    def is_volume_attached_to_instance(self, volume, instance):
+        row = self._get_row_with_volume_name(volume)
+        return row.cells[
+            self.VOLUMES_TABLE_ATTACHED_COLUMN].text.startswith(
+            "Attached to {0}".format(instance))
+
+    def detach_volume_from_instance(self, volume, instance):
+        row = self._get_row_with_volume_name(volume)
+        attachment_form = self.volumes_table.manage_attachments(row)
+        detach_form = attachment_form.detach(volume, instance)
+        # detach_form.submit()
+        # FIXME(schipiga) here there are two modal-dialog elements
+        # and base form can't select modal dialog correctly
+        self.driver.find_element(*detach_form._submit_locator).click()
+
+
+class VolumeAttachForm(forms.BaseFormRegion):
+    _attachments_table_selector = (By.CSS_SELECTOR, 'table[id="attachments"]')
+    _detach_template = 'tr[data-display="Volume {0} on instance {1}"] button'
+
+    ATTACHMENT_FIELDS = ("instance", "device")
+
+    @property
+    def attachments_table(self):
+        return self._get_element(*self._attachments_table_selector)
+
+    @property
+    def instance_selector(self):
+        return forms.FormRegion(self.driver, self.conf,
+                                field_mappings=self.ATTACHMENT_FIELDS)
+
+    def detach(self, volume, instance):
+        detach_button = self.attachments_table.find_element(
+            By.CSS_SELECTOR, self._detach_template.format(volume, instance))
+        detach_button.click()
+        return forms.BaseFormRegion(self.driver, self.conf)
+
+    def attach_instance(self, instance_name):
+        attach_form = forms.FormRegion(self.driver, self.conf,
+                                       field_mappings=self.ATTACHMENT_FIELDS)
+        values = [option.text for option in
+                  attach_form.instance.element.options]
+        value = [value for value in values if instance_name in value][0]
+        attach_form.instance.element.select_by_visible_text(value)
+        attach_form.submit()
