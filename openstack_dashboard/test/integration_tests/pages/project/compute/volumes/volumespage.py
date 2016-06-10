@@ -10,6 +10,8 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from selenium.webdriver.common import by
+
 from openstack_dashboard.test.integration_tests.pages import basepage
 from openstack_dashboard.test.integration_tests.pages.project.compute.\
     instancespage import InstanceFormNG
@@ -133,6 +135,11 @@ class VolumesPage(basepage.BaseNavigationPage):
             volume_form.availability_zone.value = \
                 self.conf.launch_instances.available_zone
         volume_form.submit()
+
+    def view_volume(self, name):
+        row = self._get_row_with_volume_name(name)
+        name_link = row.cells['name'].find_element(by.By.CSS_SELECTOR, 'a')
+        name_link.click()
 
     def set_type(self, name, volume_type=None):
         volume_type = volume_type or self.conf.volume.volume_type
