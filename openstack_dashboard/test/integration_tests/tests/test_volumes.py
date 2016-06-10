@@ -267,6 +267,41 @@ class TestAdminVolumes(helpers.AdminTestCase, TestVolumes):
     def volumes_page(self):
         return self.home_pg.go_to_system_volumes_volumespage()
 
+    def test_change_volume_status(self):
+        volumes_page = self.home_pg.go_to_compute_volumes_volumespage()
+        volumes_page.create_volume(self.VOLUME_NAME)
+        self.assertTrue(
+            volumes_page.find_message_and_dismiss(messages.INFO))
+        self.assertFalse(
+            volumes_page.find_message_and_dismiss(messages.ERROR))
+        self.assertTrue(volumes_page.is_volume_present(self.VOLUME_NAME))
+        self.assertTrue(volumes_page.is_volume_status(self.VOLUME_NAME,
+                                                      'Available'))
+
+        volumes_page = self.volumes_page
+        volumes_page.update_status(self.VOLUME_NAME, 'Error')
+        self.assertTrue(
+            volumes_page.find_message_and_dismiss(messages.SUCCESS))
+        self.assertFalse(
+            volumes_page.find_message_and_dismiss(messages.ERROR))
+        self.assertTrue(volumes_page.is_volume_status(self.VOLUME_NAME,
+                                                      'Error'))
+
+        volumes_page.update_status(self.VOLUME_NAME, 'Available')
+        self.assertTrue(
+            volumes_page.find_message_and_dismiss(messages.SUCCESS))
+        self.assertFalse(
+            volumes_page.find_message_and_dismiss(messages.ERROR))
+        self.assertTrue(volumes_page.is_volume_status(self.VOLUME_NAME,
+                                                      'Available'))
+
+        volumes_page.delete_volume(self.VOLUME_NAME)
+        self.assertTrue(
+            volumes_page.find_message_and_dismiss(messages.SUCCESS))
+        self.assertFalse(
+            volumes_page.find_message_and_dismiss(messages.ERROR))
+        self.assertTrue(volumes_page.is_volume_deleted(self.VOLUME_NAME))
+
     def test_launch_volume_as_instance(self):
         volumes_page = self.home_pg.go_to_compute_volumes_volumespage()
         volumes_page.create_volume(self.VOLUME_NAME)
