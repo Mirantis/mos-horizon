@@ -10,7 +10,10 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+
 from selenium.webdriver.common.by import By
+
+from selenium.webdriver.common import by
 
 from openstack_dashboard.test.integration_tests.pages import basepage
 from openstack_dashboard.test.integration_tests.pages.project.compute \
@@ -43,11 +46,10 @@ class VolumesTable(tables.TableRegion):
 
     EXTEND_VOLUME_FORM_FIELDS = ("new_size",)
 
-<<<<<<< HEAD
     UPLOAD_VOLUME_FORM_FIELDS = ("image_name", "disk_format")
-=======
+
     VOLUME_TYPE_FORM_FIELDS = ("name", "volume_type", "migration_policy")
->>>>>>> 7e292dc... Add autotest to change volume type
+
 
     @tables.bind_table_action('create')
     def create_volume(self, create_button):
@@ -85,7 +87,6 @@ class VolumesTable(tables.TableRegion):
         return forms.FormRegion(self.driver, self.conf,
                                 field_mappings=self.EXTEND_VOLUME_FORM_FIELDS)
 
-<<<<<<< HEAD
     @tables.bind_row_action('launch_volume')
     def launch_volume_as_instance(self, launch_volume_button, row):
         launch_volume_button.click()
@@ -106,13 +107,12 @@ class VolumesTable(tables.TableRegion):
     def launch_instance(self, launch_instance, row):
         launch_instance.click()
         return InstanceFormNG(self.driver, self.conf)
-=======
+
     @tables.bind_row_action('retype')
     def set_volume_type(self, retype_button, row):
         retype_button.click()
         return forms.FormRegion(self.driver, self.conf,
                                 field_mappings=self.VOLUME_TYPE_FORM_FIELDS)
->>>>>>> 7e292dc... Add autotest to change volume type
 
 
 class VolumesPage(basepage.BaseNavigationPage):
@@ -159,6 +159,11 @@ class VolumesPage(basepage.BaseNavigationPage):
             volume_form.availability_zone.value = \
                 self.conf.launch_instances.available_zone
         volume_form.submit()
+
+    def view_volume(self, name):
+        row = self._get_row_with_volume_name(name)
+        name_link = row.cells['name'].find_element(by.By.CSS_SELECTOR, 'a')
+        name_link.click()
 
     def set_type(self, name, volume_type=None):
         volume_type = volume_type or self.conf.volume.volume_type
