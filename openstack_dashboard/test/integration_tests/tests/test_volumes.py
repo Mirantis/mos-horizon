@@ -15,10 +15,11 @@ from openstack_dashboard.test.integration_tests import helpers
 from openstack_dashboard.test.integration_tests.regions import messages
 
 
-class TestVolumesBasic(helpers.TestCase):
-    """Login as demo user"""
+class TestVolumes(helpers.TestCase):
 
-    VOLUME_NAME = helpers.gen_random_resource_name("volume")
+    def __init__(self, *args, **kwgs):
+        super(TestVolumes, self).__init__(*args, **kwgs)
+        self.VOLUME_NAME = helpers.gen_random_resource_name("volume")
 
     @property
     def volumes_page(self):
@@ -184,7 +185,41 @@ class TestAdminVolumes(helpers.AdminTestCase, TestVolumesBasic):
     def volumes_page(self):
         return self.home_pg.go_to_system_volumes_volumespage()
 
-    def test_launch_volume_as_instance(self):
+    def test_change_volume_type(self):
+        volumes_page = self.home_pg.go_to_compute_volumes_volumespage()
+        volumes_page.create_volume(self.VOLUME_NAME, set_type=False)
+        self.assertTrue(
+            volumes_page.find_message_and_dismiss(messages.INFO))
+        self.assertFalse(
+            volumes_page.find_message_and_dismiss(messages.ERROR))
+        self.assertTrue(volumes_page.is_volume_present(self.VOLUME_NAME))
+        self.assertTrue(volumes_page.is_volume_status(self.VOLUME_NAME,
+                                                      'Available'))
+
+        volumes_page.set_type(self.VOLUME_NAME)
+        self.assertTrue(
+            volumes_page.find_message_and_dismiss(messages.INFO))
+        self.assertFalse(
+            volumes_page.find_message_and_dismiss(messages.ERROR))
+        self.assertTrue(volumes_page.is_volume_status(self.VOLUME_NAME,
+                                                      'Available'))
+
+        volumes_page.delete_volume(self.VOLUME_NAME)
+        self.assertTrue(
+            volumes_page.find_message_and_dismiss(messages.SUCCESS))
+        self.assertFalse(
+            volumes_page.find_message_and_dismiss(messages.ERROR))
+        self.assertTrue(volumes_page.is_volume_deleted(self.VOLUME_NAME))
+
+    def test_volume_extend(self):
+        """This test case checks extend volume functionality:
+            Steps:
+            1. Check current volume size
+            2. Extend volume
+            3. Check that no Error messages present
+            4. Check that the volume is still in the list
+            5. Check that the volume size is changed
+        """
         volumes_page = self.home_pg.go_to_compute_volumes_volumespage()
         volumes_page.create_volume(self.VOLUME_NAME)
         self.assertTrue(
@@ -202,6 +237,10 @@ class TestAdminVolumes(helpers.AdminTestCase, TestVolumesBasic):
             volumes_page.find_message_and_dismiss(messages.ERROR))
         instances_page = self.home_pg.go_to_system_instancespage()
         self.assertTrue(instances_page.is_instance_active(target_instance))
+        self.assertTrue(volumes_page.is_volume_status(self.VOLUME_NAME,
+                                                      'Available'))
+        new_size = volumes_page.get_size(self.VOLUME_NAME)
+        self.assertFalse(orig_size >= new_size)
 
         instances_page.delete_instance(target_instance)
         self.assertTrue(instances_page.is_instance_deleted(target_instance))

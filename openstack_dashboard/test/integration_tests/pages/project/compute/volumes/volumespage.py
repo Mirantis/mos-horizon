@@ -43,7 +43,11 @@ class VolumesTable(tables.TableRegion):
 
     EXTEND_VOLUME_FORM_FIELDS = ("new_size",)
 
+<<<<<<< HEAD
     UPLOAD_VOLUME_FORM_FIELDS = ("image_name", "disk_format")
+=======
+    VOLUME_TYPE_FORM_FIELDS = ("name", "volume_type", "migration_policy")
+>>>>>>> 7e292dc... Add autotest to change volume type
 
     @tables.bind_table_action('create')
     def create_volume(self, create_button):
@@ -81,6 +85,7 @@ class VolumesTable(tables.TableRegion):
         return forms.FormRegion(self.driver, self.conf,
                                 field_mappings=self.EXTEND_VOLUME_FORM_FIELDS)
 
+<<<<<<< HEAD
     @tables.bind_row_action('launch_volume')
     def launch_volume_as_instance(self, launch_volume_button, row):
         launch_volume_button.click()
@@ -101,6 +106,13 @@ class VolumesTable(tables.TableRegion):
     def launch_instance(self, launch_instance, row):
         launch_instance.click()
         return InstanceFormNG(self.driver, self.conf)
+=======
+    @tables.bind_row_action('retype')
+    def set_volume_type(self, retype_button, row):
+        retype_button.click()
+        return forms.FormRegion(self.driver, self.conf,
+                                field_mappings=self.VOLUME_TYPE_FORM_FIELDS)
+>>>>>>> 7e292dc... Add autotest to change volume type
 
 
 class VolumesPage(basepage.BaseNavigationPage):
@@ -126,7 +138,8 @@ class VolumesPage(basepage.BaseNavigationPage):
     def create_volume(self, volume_name, description=None,
                       volume_source_type=IMAGE_SOURCE_TYPE,
                       volume_size=None,
-                      volume_source=None):
+                      volume_source=None,
+                      set_type=True):
         volume_form = self.volumes_table.create_volume()
         volume_form.name.text = volume_name
         if description is not None:
@@ -141,10 +154,18 @@ class VolumesPage(basepage.BaseNavigationPage):
             volume_size = self.conf.volume.volume_size
         volume_form.size.value = volume_size
         if volume_source_type != "Volume":
-            volume_form.type.value = self.conf.volume.volume_type
+            if set_type:
+                volume_form.type.value = self.conf.volume.volume_type
             volume_form.availability_zone.value = \
                 self.conf.launch_instances.available_zone
         volume_form.submit()
+
+    def set_type(self, name, volume_type=None):
+        volume_type = volume_type or self.conf.volume.volume_type
+        row = self._get_row_with_volume_name(name)
+        volume_type_form = self.volumes_table.set_volume_type(row)
+        volume_type_form.volume_type.value = volume_type
+        volume_type_form.submit()
 
     def delete_volumes(self, *names):
         for name in names:
