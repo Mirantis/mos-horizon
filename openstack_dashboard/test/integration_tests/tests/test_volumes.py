@@ -486,3 +486,62 @@ class TestVolumesActions(helpers.TestCase):
             self.volumes_page.find_message_and_dismiss(messages.ERROR))
         self.assertTrue(self.volumes_page.is_volume_deleted(self.VOLUME_NAME))
         super(TestVolumesActions, self).tearDown()
+
+    def test_transfer_volume(self):
+        volumes_page = self.home_pg.go_to_compute_volumes_volumespage()
+        volumes_page.create_volume(self.VOLUME_NAME)
+        self.assertTrue(
+            volumes_page.find_message_and_dismiss(messages.INFO))
+        self.assertFalse(
+            volumes_page.find_message_and_dismiss(messages.ERROR))
+        self.assertTrue(volumes_page.is_volume_present(self.VOLUME_NAME))
+        self.assertTrue(volumes_page.is_volume_status(self.VOLUME_NAME,
+                                                      'Available'))
+
+        transfer_name = 'transfered-' + self.VOLUME_NAME
+        volume_transfer_form = volumes_page.create_transfer(
+            self.VOLUME_NAME, transfer_name)
+        self.assertTrue(
+            volumes_page.find_message_and_dismiss(messages.SUCCESS))
+        self.assertFalse(
+            volumes_page.find_message_and_dismiss(messages.ERROR))
+
+        transfer_id = volume_transfer_form._dynamic_properties['id'].text
+        transfer_key = volume_transfer_form.auth_key.text
+        volume_transfer_form.cancel()
+
+        self.assertTrue(volumes_page.is_volume_status(self.VOLUME_NAME,
+                                                      'awaiting-transfer'))
+
+        self.home_pg.log_out()
+        self.home_pg = self.login_pg.login(self.DEMO_NAME,
+                                           self.DEMO_PASSWORD)
+        self.home_pg.change_project(self.DEMO_PROJECT)
+
+        volumes_page = self.home_pg.go_to_compute_volumes_volumespage()
+        self.assertFalse(volumes_page.is_volume_present(self.VOLUME_NAME))
+
+        volumes_page.accept_transfer(transfer_id, transfer_key)
+        self.assertTrue(
+            volumes_page.find_message_and_dismiss(messages.SUCCESS))
+        self.assertFalse(
+            volumes_page.find_message_and_dismiss(messages.ERROR))
+        self.assertTrue(volumes_page.is_volume_present(self.VOLUME_NAME))
+        self.assertTrue(volumes_page.is_volume_status(self.VOLUME_NAME,
+                                                      'Available'))
+
+        self.home_pg.log_out()
+        self.home_pg = self.login_pg.login(self.ADMIN_NAME,
+                                           self.ADMIN_PASSWORD)
+        self.home_pg.change_project(self.ADMIN_PROJECT)
+
+        volumes_page = self.home_pg.go_to_compute_volumes_volumespage()
+        self.assertFalse(volumes_page.is_volume_present(self.VOLUME_NAME))
+
+        volumes_page = self.volumes_page
+        volumes_page.delete_volume(self.VOLUME_NAME)
+        self.assertTrue(
+            volumes_page.find_message_and_dismiss(messages.SUCCESS))
+        self.assertFalse(
+            volumes_page.find_message_and_dismiss(messages.ERROR))
+        self.assertTrue(volumes_page.is_volume_deleted(self.VOLUME_NAME))

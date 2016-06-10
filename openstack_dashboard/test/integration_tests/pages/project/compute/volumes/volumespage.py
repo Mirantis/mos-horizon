@@ -51,6 +51,10 @@ class VolumesTable(tables.TableRegion):
     VOLUME_TYPE_FORM_FIELDS = ("name", "volume_type", "migration_policy")
 
 
+    CREATE_TRANSFER_FORM_FIELDS = ("name",)
+
+    ACCEPT_TRANSFER_FORM_FIELDS = ("transfer_id", "auth_key")
+
     @tables.bind_table_action('create')
     def create_volume(self, create_button):
         create_button.click()
@@ -114,6 +118,20 @@ class VolumesTable(tables.TableRegion):
         return forms.FormRegion(self.driver, self.conf,
                                 field_mappings=self.VOLUME_TYPE_FORM_FIELDS)
 
+    @tables.bind_table_action('accept_transfer')
+    def accept_transfer(self, transfer_button):
+        transfer_button.click()
+        return forms.FormRegion(
+            self.driver, self.conf,
+            field_mappings=self.ACCEPT_TRANSFER_FORM_FIELDS)
+
+    @tables.bind_row_action('create_transfer')
+    def create_transfer(self, transfer_button, row):
+        transfer_button.click()
+        return forms.FormRegion(
+            self.driver, self.conf,
+            field_mappings=self.CREATE_TRANSFER_FORM_FIELDS)
+
 
 class VolumesPage(basepage.BaseNavigationPage):
 
@@ -159,6 +177,26 @@ class VolumesPage(basepage.BaseNavigationPage):
             volume_form.availability_zone.value = \
                 self.conf.launch_instances.available_zone
         volume_form.submit()
+
+    def create_transfer(self, name, transfer_name):
+        row = self._get_row_with_volume_name(name)
+        create_transfer_form = self.volumes_table.create_transfer(row)
+        create_transfer_form.name.text = transfer_name
+        create_transfer_form.submit()
+        return VolumeTransferForm(self.driver, self.conf)
+
+    def accept_transfer(self, transfer_id, transfer_key):
+        accept_transfer_form = self.volumes_table.accept_transfer()
+        accept_transfer_form.transfer_id.text = transfer_id
+        accept_transfer_form.auth_key.text = transfer_key
+        accept_transfer_form.submit()
+
+    def upload_volume_to_image(self, name, image_name, disk_format):
+        row = self._get_row_with_volume_name(name)
+        upload_volume_form = self.volumes_table.upload_volume_to_image(row)
+        upload_volume_form.image_name.text = image_name
+        upload_volume_form.disk_format.value = disk_format
+        upload_volume_form.submit()
 
     def view_volume(self, name):
         row = self._get_row_with_volume_name(name)
@@ -317,9 +355,20 @@ class VolumeAttachForm(forms.BaseFormRegion):
         return forms.BaseFormRegion(self.driver, self.conf)
 
     def attach_instance(self, instance_name):
-        instance = filter(lambda x: x.startswith(instance_name),
-                          self.instance_selector.options.values())
-        if not instance:
-            raise AttributeError("Unable to select {0}".format(instance_name))
-        self.instance_selector.text = instance[0]
-        self.submit()
+
+        attach_form = forms.FormRegion(self.driver, self.conf,
+                                       field_mappings=self.ATTACHMENT_FIELDS)
+        values = [option.text for option in
+                  attach_form.instance.element.options]
+        value = [value for value in values if instance_name in value][0]
+        attach_form.instance.element.select_by_visible_text(value)
+        attach_form.submit()
+
+
+class VolumeTransferForm(forms.FormRegion):
+
+    FIELDS = ("name", "id", "auth_key")
+
+    def __init__(self, driver, conf):
+        super(VolumeTransferForm, self).__init__(driver, conf, src_elem=driver,
+                                                 field_mappings=self.FIELDS)
