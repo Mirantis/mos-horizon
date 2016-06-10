@@ -16,7 +16,10 @@ from openstack_dashboard.test.integration_tests.regions import messages
 
 
 class TestVolumes(helpers.TestCase):
-    VOLUME_NAME = helpers.gen_random_resource_name("volume")
+
+    def __init__(self, *args, **kwgs):
+        super(TestVolumes, self).__init__(*args, **kwgs)
+        self.VOLUME_NAME = helpers.gen_random_resource_name("volume")
 
     @property
     def volumes_page(self):
@@ -174,6 +177,32 @@ class TestVolumes(helpers.TestCase):
             volumes_page.find_message_and_dismiss(messages.SUCCESS)
             self.assertTrue(volumes_page.is_volume_deleted(volume_name))
 
+    def test_change_volume_type(self):
+        volumes_page = self.home_pg.go_to_compute_volumes_volumespage()
+        volumes_page.create_volume(self.VOLUME_NAME, set_type=False)
+        self.assertTrue(
+            volumes_page.find_message_and_dismiss(messages.INFO))
+        self.assertFalse(
+            volumes_page.find_message_and_dismiss(messages.ERROR))
+        self.assertTrue(volumes_page.is_volume_present(self.VOLUME_NAME))
+        self.assertTrue(volumes_page.is_volume_status(self.VOLUME_NAME,
+                                                      'Available'))
+
+        volumes_page.set_type(self.VOLUME_NAME)
+        self.assertTrue(
+            volumes_page.find_message_and_dismiss(messages.INFO))
+        self.assertFalse(
+            volumes_page.find_message_and_dismiss(messages.ERROR))
+        self.assertTrue(volumes_page.is_volume_status(self.VOLUME_NAME,
+                                                      'Available'))
+
+        volumes_page.delete_volume(self.VOLUME_NAME)
+        self.assertTrue(
+            volumes_page.find_message_and_dismiss(messages.SUCCESS))
+        self.assertFalse(
+            volumes_page.find_message_and_dismiss(messages.ERROR))
+        self.assertTrue(volumes_page.is_volume_deleted(self.VOLUME_NAME))
+
     def test_volume_extend(self):
         """This test case checks extend volume functionality:
             Steps:
@@ -199,6 +228,8 @@ class TestVolumes(helpers.TestCase):
             volumes_page.find_message_and_dismiss(messages.INFO))
         self.assertFalse(
             volumes_page.find_message_and_dismiss(messages.ERROR))
+        self.assertTrue(volumes_page.is_volume_status(self.VOLUME_NAME,
+                                                      'Available'))
         new_size = volumes_page.get_size(self.VOLUME_NAME)
         self.assertFalse(orig_size >= new_size)
 
@@ -211,7 +242,6 @@ class TestVolumes(helpers.TestCase):
 
 
 class TestAdminVolumes(helpers.AdminTestCase, TestVolumes):
-    VOLUME_NAME = helpers.gen_random_resource_name("volume")
 
     @property
     def volumes_page(self):
