@@ -20,6 +20,8 @@ class TestVolumes(helpers.TestCase):
     def __init__(self, *args, **kwgs):
         super(TestVolumes, self).__init__(*args, **kwgs)
         self.VOLUME_NAME = helpers.gen_random_resource_name("volume")
+        self.IMAGE_NAME = helpers.gen_random_resource_name("image")
+        self.INSTANCE_NAME = helpers.gen_random_resource_name("instance")
 
     @property
     def volumes_page(self):
@@ -215,6 +217,58 @@ class TestVolumes(helpers.TestCase):
             volumes_page.find_message_and_dismiss(messages.ERROR))
         self.assertTrue(volumes_page.is_volume_status(self.VOLUME_NAME,
                                                       'Available'))
+
+        volumes_page.delete_volume(self.VOLUME_NAME)
+        self.assertTrue(
+            volumes_page.find_message_and_dismiss(messages.SUCCESS))
+        self.assertFalse(
+            volumes_page.find_message_and_dismiss(messages.ERROR))
+        self.assertTrue(volumes_page.is_volume_deleted(self.VOLUME_NAME))
+
+    def test_volume_upload_to_image(self):
+        """This test case checks upload volume to image functionality:
+            Steps:
+            1. Upload volume to image with some disk format
+            2. Check that image is created
+            3. Check that no Error messages present
+            4. Delete the image
+            5. Repeat actions for all disk formats
+        """
+        volumes_page = self.home_pg.go_to_compute_volumes_volumespage()
+        volumes_page.create_volume(self.VOLUME_NAME)
+        self.assertTrue(
+            volumes_page.find_message_and_dismiss(messages.INFO))
+        self.assertFalse(
+            volumes_page.find_message_and_dismiss(messages.ERROR))
+        self.assertTrue(volumes_page.is_volume_present(self.VOLUME_NAME))
+        self.assertTrue(volumes_page.is_volume_status(self.VOLUME_NAME,
+                                                      'Available'))
+
+        all_formats = {"qcow2": u'QCOW2', "raw": u'Raw', "vdi": u'VDI',
+                       "vmdk": u'VMDK'}
+        for disk_format in all_formats:
+            volumes_page.upload_volume_to_image(self.VOLUME_NAME,
+                                                self.IMAGE_NAME,
+                                                disk_format)
+            self.assertFalse(
+                volumes_page.find_message_and_dismiss(messages.ERROR))
+            self.assertTrue(volumes_page.is_volume_status(
+                self.VOLUME_NAME, 'Available'))
+
+            images_page = self.home_pg.go_to_compute_imagespage()
+            self.assertTrue(images_page.is_image_present(self.IMAGE_NAME))
+            self.assertTrue(images_page.is_image_active(self.IMAGE_NAME))
+            self.assertEqual(images_page.get_image_format(self.IMAGE_NAME),
+                             all_formats[disk_format])
+
+            images_page.delete_image(self.IMAGE_NAME)
+            self.assertTrue(images_page.find_message_and_dismiss(
+                messages.SUCCESS))
+            self.assertFalse(images_page.find_message_and_dismiss(
+                messages.ERROR))
+            self.assertFalse(images_page.is_image_present(self.IMAGE_NAME))
+            volumes_page = \
+                self.home_pg.go_to_compute_volumes_volumespage()
 
         volumes_page.delete_volume(self.VOLUME_NAME)
         self.assertTrue(

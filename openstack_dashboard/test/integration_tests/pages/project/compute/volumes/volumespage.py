@@ -43,6 +43,8 @@ class VolumesTable(tables.TableRegion):
 
     VOLUME_TYPE_FORM_FIELDS = ("name", "volume_type", "migration_policy")
 
+    UPLOAD_VOLUME_FORM_FIELDS = ("image_name", "disk_format")
+
     @tables.bind_table_action('create')
     def create_volume(self, create_button):
         create_button.click()
@@ -95,6 +97,12 @@ class VolumesTable(tables.TableRegion):
         manage_attachments.click()
         return VolumeAttachForm(self.driver, self.conf)
 
+    @tables.bind_row_action('upload_to_image')
+    def upload_volume_to_image(self, upload_button, row):
+        upload_button.click()
+        return forms.FormRegion(self.driver, self.conf,
+                                field_mappings=self.UPLOAD_VOLUME_FORM_FIELDS)
+
 
 class VolumesPage(basepage.BaseNavigationPage):
 
@@ -140,6 +148,13 @@ class VolumesPage(basepage.BaseNavigationPage):
             volume_form.availability_zone.value = \
                 self.conf.launch_instances.available_zone
         volume_form.submit()
+
+    def upload_volume_to_image(self, name, image_name, disk_format):
+        row = self._get_row_with_volume_name(name)
+        upload_volume_form = self.volumes_table.upload_volume_to_image(row)
+        upload_volume_form.image_name.text = image_name
+        upload_volume_form.disk_format.value = disk_format
+        upload_volume_form.submit()
 
     def view_volume(self, name):
         row = self._get_row_with_volume_name(name)
