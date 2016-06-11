@@ -20,11 +20,19 @@ class VolumesTable(volumespage.VolumesTable):
 
     UPDATE_STATUS_FORM_FIELDS = ("status",)
 
+    MIGRATE_VOLUME_FORM_FIELDS = ("name", "current_host", "host")
+
     @tables.bind_row_action('update_status')
     def update_volume_status(self, update_status_button, row):
         update_status_button.click()
         return forms.FormRegion(self.driver, self.conf,
                                 field_mappings=self.UPDATE_STATUS_FORM_FIELDS)
+
+    @tables.bind_row_action('migrate')
+    def migrate_volume(self, migrate_button, row):
+        migrate_button.click()
+        return forms.FormRegion(self.driver, self.conf,
+                                field_mappings=self.MIGRATE_VOLUME_FORM_FIELDS)
 
 
 class VolumesPage(volumespage.VolumesPage):
@@ -38,3 +46,15 @@ class VolumesPage(volumespage.VolumesPage):
         volume_status_form = self.volumes_table.update_volume_status(row)
         volume_status_form.status.value = status.lower()
         volume_status_form.submit()
+
+    def migrate_volume(self, name):
+        row = self._get_row_with_volume_name(name)
+        migrate_volume_form = self.volumes_table.migrate_volume(row)
+        cur_host = migrate_volume_form.current_host.text
+
+        new_host = [option.text for option in
+                    migrate_volume_form.host.element.options][-1]
+        migrate_volume_form.host.element.select_by_visible_text(new_host)
+
+        migrate_volume_form.submit()
+        return cur_host, new_host
