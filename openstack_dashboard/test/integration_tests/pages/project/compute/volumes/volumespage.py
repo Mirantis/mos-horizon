@@ -10,7 +10,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-
+from selenium.common import exceptions
 from selenium.webdriver.common.by import By
 
 from selenium.webdriver.common import by
@@ -132,6 +132,39 @@ class VolumesTable(tables.TableRegion):
             self.driver, self.conf,
             field_mappings=self.CREATE_TRANSFER_FORM_FIELDS)
 
+    def get_row(self, columns, exact_match=True):
+        """Get row that contains specified text in specified column.
+        In case exact_match is set to True, text contained in row must equal
+        searched text, otherwise occurrence of searched text in the column
+        text will result in row match.
+        """
+        def get_text(element):
+            text = element.get_attribute('data-selenium')
+            return text or element.text
+
+        for row in self.rows:
+            try:
+                match_flag = True
+                for column_name, column_value in columns.items():
+
+                    if not match_flag:
+                        break
+
+                    cell = row.cells[column_name]
+                    if exact_match:
+                        if column_value != get_text(cell):
+                            match_flag = False
+                    else:
+                        if column_value in get_text(cell):
+                            match_flag = False
+
+                if match_flag:
+                    return row
+            # NOTE(tsufiev): if a row was deleted during iteration
+            except exceptions.StaleElementReferenceException:
+                pass
+        return None
+
 
 class VolumesPage(basepage.BaseNavigationPage):
 
@@ -139,15 +172,18 @@ class VolumesPage(basepage.BaseNavigationPage):
     VOLUMES_TABLE_STATUS_COLUMN = 'status'
     VOLUMES_TABLE_TYPE_COLUMN = 'volume_type'
     VOLUMES_TABLE_SIZE_COLUMN = 'size'
+    VOLUMES_TABLE_HOST_COLUMN = 'host'
     VOLUMES_TABLE_ATTACHED_COLUMN = 'attachments'
 
     def __init__(self, driver, conf):
         super(VolumesPage, self).__init__(driver, conf)
         self._page_title = "Volumes"
 
-    def _get_row_with_volume_name(self, name):
-        return self.volumes_table.get_row(
-            self.VOLUMES_TABLE_NAME_COLUMN, name)
+    def _get_row_with_volume_name(self, name, host=None):
+        columns = {self.VOLUMES_TABLE_NAME_COLUMN: name}
+        if host:
+            columns[self.VOLUMES_TABLE_HOST_COLUMN] = host
+        return self.volumes_table.get_row(columns)
 
     @property
     def volumes_table(self):
@@ -230,19 +266,19 @@ class VolumesPage(basepage.BaseNavigationPage):
             volume_edit_form.description.text = description
         volume_edit_form.submit()
 
-    def is_volume_present(self, name):
-        return bool(self._get_row_with_volume_name(name))
+    def is_volume_present(self, name, host=None):
+        return bool(self._get_row_with_volume_name(name, host))
 
-    def is_volume_status(self, name, status):
+    def is_volume_status(self, name, status, host=None):
         def cell_getter():
-            row = self._get_row_with_volume_name(name)
+            row = self._get_row_with_volume_name(name, host)
             return row and row.cells[self.VOLUMES_TABLE_STATUS_COLUMN]
 
         return bool(self.volumes_table.wait_cell_status(cell_getter, status))
 
-    def is_volume_deleted(self, name):
+    def is_volume_deleted(self, name, host=None):
         return self.volumes_table.is_row_deleted(
-            lambda: self._get_row_with_volume_name(name))
+            lambda: self._get_row_with_volume_name(name, host))
 
     def _get_source_name(self, volume_form, volume_source_type, conf,
                          volume_source):
