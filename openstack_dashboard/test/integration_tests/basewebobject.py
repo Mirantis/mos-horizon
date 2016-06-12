@@ -130,11 +130,12 @@ class BaseWebObject(unittest.TestCase):
         return self._wait_until(predicate, timeout)
 
     def _wait_till_element_visible(self, locator, timeout=None):
-        self._wait_until(lambda x: self._is_element_visible(*locator), timeout)
+        return self._wait_until(
+            lambda x: self._is_element_visible(*locator), timeout)
 
     def _wait_till_element_disappears(self, element, timeout=None):
-        self._wait_until(lambda x: not self._is_element_displayed(element),
-                         timeout)
+        return self._wait_until(
+            lambda x: not self._is_element_displayed(element), timeout)
 
     @contextlib.contextmanager
     def waits_disabled(self):
@@ -147,12 +148,12 @@ class BaseWebObject(unittest.TestCase):
     def wait_till_element_disappears(self, element_getter):
         with self.waits_disabled():
             try:
-                self._wait_till_element_disappears(element_getter())
+                return self._wait_till_element_disappears(element_getter())
             except Exceptions.NoSuchElementException:
                 # NOTE(mpavlase): This is valid state. When request completes
                 # even before Selenium get a chance to get the spinner element,
                 # it will raise the NoSuchElementException exception.
-                pass
+                return True
 
     def wait_till_spinner_disappears(self):
         getter = lambda: self.driver.find_element(*self._spinner_locator)

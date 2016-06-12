@@ -51,9 +51,13 @@ class VolumesPage(volumespage.VolumesPage):
         row = self._get_row_with_volume_name(name)
         migrate_volume_form = self.volumes_table.migrate_volume(row)
         cur_host = migrate_volume_form.current_host.text
+        values = [option.text for option in
+                  migrate_volume_form.host.element.options]
+        if len(values) == 1:
+            migrate_volume_form.cancel()
+            return cur_host, None
 
-        new_host = [option.text for option in
-                    migrate_volume_form.host.element.options][-1]
+        new_host = values[-1]
         migrate_volume_form.host.element.select_by_visible_text(new_host)
 
         migrate_volume_form.submit()
