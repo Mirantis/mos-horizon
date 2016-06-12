@@ -516,6 +516,16 @@ class TestAdminVolumes(helpers.AdminTestCase, TestVolumes):
                                                       'Available'))
         volumes_page = self.volumes_page
         cur_host, new_host = volumes_page.migrate_volume(self.VOLUME_NAME)
+
+        if not new_host:
+            volumes_page.delete_volume(self.VOLUME_NAME)
+            self.assertTrue(
+                volumes_page.find_message_and_dismiss(messages.SUCCESS))
+            self.assertFalse(
+                volumes_page.find_message_and_dismiss(messages.ERROR))
+            self.assertTrue(volumes_page.is_volume_deleted(self.VOLUME_NAME))
+            self.skipTest("No hosts to migrate")
+
         self.assertTrue(
             volumes_page.find_message_and_dismiss(messages.SUCCESS))
         self.assertFalse(
