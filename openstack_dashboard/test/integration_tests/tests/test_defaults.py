@@ -21,20 +21,20 @@ class TestDefaults(helpers.AdminTestCase):
         self.defaults_page = self.home_pg.go_to_system_defaultspage()
 
     def test_update_defaults(self):
-        uploaded_file_quota = self.defaults_page.get_uploaded_file_quota()
-        new_uploaded_file_quota = uploaded_file_quota + "0"
-        self.defaults_page.set_uploaded_file_quota(new_uploaded_file_quota)
+        volumes_quota = self.defaults_page.get_volumes_quota()
+        new_volumes_quota = volumes_quota + "0"
+        self.defaults_page.set_volumes_quota(new_volumes_quota)
         self.assertTrue(
             self.defaults_page.find_message_and_dismiss(messages.SUCCESS))
         self.assertFalse(
             self.defaults_page.find_message_and_dismiss(messages.ERROR))
-        self.assertEqual(self.defaults_page.get_uploaded_file_quota(),
-                         new_uploaded_file_quota)
+        self.assertEqual(self.defaults_page.get_volumes_quota(),
+                         new_volumes_quota)
 
-        self.defaults_page.set_uploaded_file_quota(uploaded_file_quota)
+        self.defaults_page.set_volumes_quota(volumes_quota)
         self.assertTrue(
             self.defaults_page.find_message_and_dismiss(messages.SUCCESS))
         self.assertFalse(
             self.defaults_page.find_message_and_dismiss(messages.ERROR))
-        self.assertEqual(self.defaults_page.get_uploaded_file_quota(),
-                         uploaded_file_quota)
+        self.assertEqual(self.defaults_page.get_volumes_quota(),
+                         volumes_quota)
