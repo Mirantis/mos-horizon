@@ -18,11 +18,10 @@ from openstack_dashboard.test.integration_tests.regions import forms
 
 class DefaultsPage(basepage.BaseNavigationPage):
 
-    UPDATE_QUOTAS_FORM_FIELDS = ("injected_file_content_bytes",)
+    UPDATE_QUOTAS_FORM_FIELDS = ("volumes",)
 
-    _uploaded_file_selector = (
-        By.CSS_SELECTOR,
-        "tr#quotas__row__injected_file_content_bytes > td:last-child")
+    _volumes_quota_selector = (By.CSS_SELECTOR,
+                               "tr#quotas__row__volumes > td:last-child")
     _update_quotas_button = (By.CSS_SELECTOR,
                              "a#quotas__action_update_defaults")
 
@@ -30,13 +29,13 @@ class DefaultsPage(basepage.BaseNavigationPage):
         super(DefaultsPage, self).__init__(driver, conf)
         self._page_title = "Defaults"
 
-    def get_uploaded_file_quota(self):
-        return self._get_element(*self._uploaded_file_selector).text
+    def get_volumes_quota(self):
+        return self._get_element(*self._volumes_quota_selector).text
 
-    def set_uploaded_file_quota(self, value):
+    def set_volumes_quota(self, value):
         self._get_element(*self._update_quotas_button).click()
         update_quotas_form = forms.FormRegion(
             self.driver, self.conf,
             field_mappings=self.UPDATE_QUOTAS_FORM_FIELDS)
-        update_quotas_form.injected_file_content_bytes.value = value
+        update_quotas_form.volumes.value = value
         update_quotas_form.submit()
