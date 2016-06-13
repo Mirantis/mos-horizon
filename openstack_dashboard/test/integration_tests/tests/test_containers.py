@@ -13,6 +13,7 @@
 from os import path
 from time import sleep
 
+from nose import with_setup
 import requests
 
 from openstack_dashboard.test.integration_tests import helpers
@@ -21,168 +22,59 @@ from openstack_dashboard.test.integration_tests.regions import messages
 
 class TestContainers(helpers.TestCase):
 
-    def __init__(self, *args, **kwgs):
-        super(TestContainers, self).__init__(*args, **kwgs)
-        self.container_name = helpers.gen_random_resource_name("container")
-        self.folder_name = helpers.gen_random_resource_name("folder")
-
     def setUp(self):
         super(TestContainers, self).setUp()
+        self.container_name = helpers.gen_random_resource_name("container")
+        self.folder_name = helpers.gen_random_resource_name("folder")
         self.containers_page = self.home_pg.go_to_objectstore_containerspage()
+        getattr(self, self._testMethodName).setup(self)
 
-    def test_create_private_container(self):
-        self.containers_page.create_container(self.container_name)
-        self.assertTrue(
-            self.containers_page.find_message_and_dismiss(messages.SUCCESS))
-        self.assertFalse(
-            self.containers_page.find_message_and_dismiss(messages.ERROR))
-        self.assertTrue(
-            self.containers_page.is_container_present(self.container_name))
+    def setup(self):
+        self._create_container()
+        self.addCleanup(self._delete_container)
 
-        self.containers_page.choose_container(self.container_name)
-        self.assertTrue(self.containers_page.has_details(self.container_name))
+    @with_setup(setup)
+    def test_view_private_container(self):
+        self._choose_container()
 
-        self.containers_page.delete_container(self.container_name)
-        self.assertTrue(
-            self.containers_page.find_message_and_dismiss(messages.SUCCESS))
-        self.assertFalse(
-            self.containers_page.find_message_and_dismiss(messages.ERROR))
-        self.assertTrue(
-            self.containers_page.is_container_deleted(self.container_name))
+    @with_setup(setup)
+    def test_upload_file(self):
+        self._choose_container()
+        with helpers.gen_temporary_file(size=1024 * 1024) as file_path:
+            self._upload_file(file_path)
+            self._delete_file(path.basename(file_path))
 
-    def test_create_public_container(self):
-        self.containers_page.create_container(self.container_name, public=True)
-        self.assertTrue(
-            self.containers_page.find_message_and_dismiss(messages.SUCCESS))
-        self.assertFalse(
-            self.containers_page.find_message_and_dismiss(messages.ERROR))
-        self.assertTrue(
-            self.containers_page.is_container_present(self.container_name))
+    def setup(self):
+        self._create_container(public=True)
+        self.addCleanup(self._delete_container)
 
-        self.containers_page.choose_container(self.container_name)
-        self.assertTrue(self.containers_page.has_details(self.container_name))
+    @with_setup(setup)
+    def test_view_public_container(self):
+        self._choose_container()
 
-        self.containers_page.delete_container(self.container_name)
-        self.assertTrue(
-            self.containers_page.find_message_and_dismiss(messages.SUCCESS))
-        self.assertFalse(
-            self.containers_page.find_message_and_dismiss(messages.ERROR))
-        self.assertTrue(
-            self.containers_page.is_container_deleted(self.container_name))
+    def setup_folder(self):
+        self.setup()
+        self._choose_container()
+        self._create_folder()
+        self.addCleanup(self._delete_folder)
 
+    @with_setup(setup_folder)
     def test_available_public_container_url(self):
-        self.containers_page.create_container(self.container_name, public=True)
-        self.assertTrue(
-            self.containers_page.find_message_and_dismiss(messages.SUCCESS))
-        self.assertFalse(
-            self.containers_page.find_message_and_dismiss(messages.ERROR))
-        self.assertTrue(
-            self.containers_page.is_container_present(self.container_name))
-
-        self.containers_page.choose_container(self.container_name)
-
-        self.containers_page.create_folder(self.folder_name)
-        self.assertTrue(self.containers_page.find_message_and_dismiss(
-            messages.SUCCESS))
-        self.assertFalse(
-            self.containers_page.find_message_and_dismiss(messages.ERROR))
-        self.assertTrue(
-            self.containers_page.is_object_present(self.folder_name))
-
         link = self.containers_page.get_public_container_link(
             self.container_name)
         self.assertTrue(self.folder_name in requests.get(link).text)
 
-        self.containers_page.delete_object(self.folder_name)
-        self.assertTrue(self.containers_page.find_message_and_dismiss(
-            messages.SUCCESS))
-        self.assertFalse(
-            self.containers_page.find_message_and_dismiss(messages.ERROR))
-        self.assertTrue(
-            self.containers_page.is_object_deleted(self.folder_name))
-
-        self.containers_page.delete_container(self.container_name)
-        self.assertTrue(
-            self.containers_page.find_message_and_dismiss(messages.SUCCESS))
-        self.assertFalse(
-            self.containers_page.find_message_and_dismiss(messages.ERROR))
-        self.assertTrue(
-            self.containers_page.is_container_deleted(self.container_name))
-
-    def test_upload_file(self):
-        self.containers_page.create_container(self.container_name)
-        self.assertTrue(
-            self.containers_page.find_message_and_dismiss(messages.SUCCESS))
-        self.assertFalse(
-            self.containers_page.find_message_and_dismiss(messages.ERROR))
-        self.assertTrue(
-            self.containers_page.is_container_present(self.container_name))
-
-        self.containers_page.choose_container(self.container_name)
-
-        with helpers.gen_temporary_file(size=1024*1024) as file_path:
-            file_name = path.basename(file_path)
-
-            self.containers_page.upload_file(file_path)
-            self.assertTrue(self.containers_page.find_message_and_dismiss(
-                messages.SUCCESS))
-            self.assertFalse(
-                self.containers_page.find_message_and_dismiss(messages.ERROR))
-            self.assertTrue(self.containers_page.is_object_present(file_name))
-
-            self.containers_page.delete_object(file_name)
-            self.assertTrue(self.containers_page.find_message_and_dismiss(
-                messages.SUCCESS))
-            self.assertFalse(
-                self.containers_page.find_message_and_dismiss(messages.ERROR))
-            self.assertTrue(self.containers_page.is_object_deleted(file_name))
-            sleep(5)  # be sure file is deleted at backend
-
-        self.containers_page.delete_container(self.container_name)
-        self.assertTrue(
-            self.containers_page.find_message_and_dismiss(messages.SUCCESS))
-        self.assertFalse(
-            self.containers_page.find_message_and_dismiss(messages.ERROR))
-        self.assertTrue(
-            self.containers_page.is_container_deleted(self.container_name))
-
-    def test_create_folder(self):
-        self.containers_page.create_container(self.container_name)
-        self.assertTrue(
-            self.containers_page.find_message_and_dismiss(messages.SUCCESS))
-        self.assertFalse(
-            self.containers_page.find_message_and_dismiss(messages.ERROR))
-        self.assertTrue(
-            self.containers_page.is_container_present(self.container_name))
-
-        self.containers_page.choose_container(self.container_name)
-
-        self.containers_page.create_folder(self.folder_name)
-        self.assertTrue(self.containers_page.find_message_and_dismiss(
-            messages.SUCCESS))
-        self.assertFalse(
-            self.containers_page.find_message_and_dismiss(messages.ERROR))
-        self.assertTrue(
-            self.containers_page.is_object_present(self.folder_name))
-
-        self.containers_page.delete_object(self.folder_name)
-        self.assertTrue(self.containers_page.find_message_and_dismiss(
-            messages.SUCCESS))
-        self.assertFalse(
-            self.containers_page.find_message_and_dismiss(messages.ERROR))
-        self.assertTrue(
-            self.containers_page.is_object_deleted(self.folder_name))
-
-        self.containers_page.delete_container(self.container_name)
-        self.assertTrue(
-            self.containers_page.find_message_and_dismiss(messages.SUCCESS))
-        self.assertFalse(
-            self.containers_page.find_message_and_dismiss(messages.ERROR))
-        self.assertTrue(
-            self.containers_page.is_container_deleted(self.container_name))
-
+    @with_setup(setup_folder)
     def test_upload_file_to_folder(self):
-        self.containers_page.create_container(self.container_name)
+        self.containers_page.choose_folder(self.folder_name)
+        with helpers.gen_temporary_file(size=1024 * 1024) as file_path:
+            self._upload_file(file_path)
+            self._delete_file(path.basename(file_path))
+        self._choose_container()
+
+    # steps
+    def _create_container(self, public=False):
+        self.containers_page.create_container(self.container_name, public)
         self.assertTrue(
             self.containers_page.find_message_and_dismiss(messages.SUCCESS))
         self.assertFalse(
@@ -190,8 +82,20 @@ class TestContainers(helpers.TestCase):
         self.assertTrue(
             self.containers_page.is_container_present(self.container_name))
 
-        self.containers_page.choose_container(self.container_name)
+    def _delete_container(self):
+        self.containers_page.delete_container(self.container_name)
+        self.assertTrue(
+            self.containers_page.find_message_and_dismiss(messages.SUCCESS))
+        self.assertFalse(
+            self.containers_page.find_message_and_dismiss(messages.ERROR))
+        self.assertTrue(
+            self.containers_page.is_container_deleted(self.container_name))
 
+    def _choose_container(self):
+        self.containers_page.choose_container(self.container_name)
+        self.assertTrue(self.containers_page.has_details(self.container_name))
+
+    def _create_folder(self):
         self.containers_page.create_folder(self.folder_name)
         self.assertTrue(self.containers_page.find_message_and_dismiss(
             messages.SUCCESS))
@@ -200,27 +104,7 @@ class TestContainers(helpers.TestCase):
         self.assertTrue(
             self.containers_page.is_object_present(self.folder_name))
 
-        self.containers_page.choose_folder(self.folder_name)
-
-        with helpers.gen_temporary_file(size=1024*1024) as file_path:
-            file_name = path.basename(file_path)
-
-            self.containers_page.upload_file(file_path)
-            self.assertTrue(self.containers_page.find_message_and_dismiss(
-                messages.SUCCESS))
-            self.assertFalse(
-                self.containers_page.find_message_and_dismiss(messages.ERROR))
-            self.assertTrue(self.containers_page.is_object_present(file_name))
-
-            self.containers_page.delete_object(file_name)
-            self.assertTrue(self.containers_page.find_message_and_dismiss(
-                messages.SUCCESS))
-            self.assertFalse(
-                self.containers_page.find_message_and_dismiss(messages.ERROR))
-            self.assertTrue(self.containers_page.is_object_deleted(file_name))
-            sleep(5)  # be sure file is deleted at backend
-
-        self.containers_page.choose_container(self.container_name)
+    def _delete_folder(self):
         self.containers_page.delete_object(self.folder_name)
         self.assertTrue(self.containers_page.find_message_and_dismiss(
             messages.SUCCESS))
@@ -229,13 +113,23 @@ class TestContainers(helpers.TestCase):
         self.assertTrue(
             self.containers_page.is_object_deleted(self.folder_name))
 
-        self.containers_page.delete_container(self.container_name)
-        self.assertTrue(
-            self.containers_page.find_message_and_dismiss(messages.SUCCESS))
+    def _upload_file(self, file_path):
+        self.containers_page.upload_file(file_path)
+        self.assertTrue(self.containers_page.find_message_and_dismiss(
+            messages.SUCCESS))
         self.assertFalse(
             self.containers_page.find_message_and_dismiss(messages.ERROR))
         self.assertTrue(
-            self.containers_page.is_container_deleted(self.container_name))
+            self.containers_page.is_object_present(path.basename(file_path)))
+
+    def _delete_file(self, file_name):
+        self.containers_page.delete_object(file_name)
+        self.assertTrue(self.containers_page.find_message_and_dismiss(
+            messages.SUCCESS))
+        self.assertFalse(
+            self.containers_page.find_message_and_dismiss(messages.ERROR))
+        self.assertTrue(self.containers_page.is_object_deleted(file_name))
+        sleep(5)  # be sure file is deleted at backend
 
 
 class TestAdminContainers(helpers.AdminTestCase, TestContainers):
