@@ -72,8 +72,8 @@ def _attach_diagnostic_snapshot():
 
         os.environ.update({
             'SERVER_ADDRESS': admin_ip,
-            'KEYSTONE_USER': 'admin',
-            'KEYSTONE_PASS': 'admin',
+            'OS_USERNAME': 'admin',
+            'OS_PASSWORD': 'admin',
         })
         fuelclient_settings._SETTINGS = None
         client.APIClient.__init__()
