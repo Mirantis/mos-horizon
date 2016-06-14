@@ -20,7 +20,6 @@ class TestVolumeBackups(helpers.TestCase):
     VOLUME_BACKUP_NAME = helpers.gen_random_resource_name("volume_backup")
 
     def setUp(self):
-        """Setup: create volume"""
         super(TestVolumeBackups, self).setUp()
         volumes_page = self.home_pg.go_to_compute_volumes_volumespage()
         volumes_page.create_volume(self.VOLUME_NAME)
@@ -29,9 +28,7 @@ class TestVolumeBackups(helpers.TestCase):
                                                       'Available'))
 
         def cleanup():
-            volumes_backup_page = \
-                self.home_pg.go_to_compute_volumes_volumebackupspage()
-            volumes_page = volumes_backup_page.switch_to_volumes_tab()
+            volumes_page = self.home_pg.go_to_compute_volumes_volumespage()
             volumes_page.delete_volume(self.VOLUME_NAME)
             volumes_page.find_message_and_dismiss(messages.SUCCESS)
             self.assertTrue(volumes_page.is_volume_deleted(self.VOLUME_NAME))
