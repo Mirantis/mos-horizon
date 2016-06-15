@@ -10,6 +10,8 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import time
+
 from selenium.webdriver.common import by
 
 from openstack_dashboard.test.integration_tests.pages import basepage
@@ -31,6 +33,8 @@ class InstanceFormNG(forms.TabbedFormRegionNG):
     def __init__(self, driver, conf):
         super(InstanceFormNG, self).__init__(
             driver, conf, field_mappings=self.field_mappings)
+        # TODO(schipiga): need lazy machanism to get form fields dinamically.
+        time.sleep(5)  # wait fields initialization
 
 
 class InstancesTable(tables.TableRegion):
