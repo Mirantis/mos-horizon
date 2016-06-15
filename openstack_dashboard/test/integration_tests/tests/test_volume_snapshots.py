@@ -33,9 +33,7 @@ class TestVolumeSnapshotsBasic(helpers.TestCase):
                                                       'Available'))
 
         def cleanup():
-            volumes_snapshot_page = \
-                self.home_pg.go_to_compute_volumes_volumesnapshotspage()
-            volumes_page = volumes_snapshot_page.switch_to_volumes_tab()
+            volumes_page = self.home_pg.go_to_compute_volumes_volumespage()
             volumes_page.delete_volume(self.VOLUME_NAME)
             volumes_page.find_message_and_dismiss(messages.SUCCESS)
             self.assertTrue(volumes_page.is_volume_deleted(self.VOLUME_NAME))
@@ -198,9 +196,7 @@ class TestVolumeSnapshotsAdvanced(helpers.TestCase):
                                                       'Available'))
 
         def cleanup():
-            volumes_snapshot_page = \
-                self.home_pg.go_to_compute_volumes_volumesnapshotspage()
-            volumes_page = volumes_snapshot_page.switch_to_volumes_tab()
+            volumes_page = self.home_pg.go_to_compute_volumes_volumespage()
             volumes_page.delete_volume(self.VOLUME_NAME)
             self.assertTrue(
                 volumes_page.find_message_and_dismiss(messages.SUCCESS))
@@ -235,6 +231,13 @@ class TestVolumeSnapshotsAdvanced(helpers.TestCase):
         self.assertTrue(volumes_page.is_volume_present(new_volume))
         self.assertTrue(volumes_page.is_volume_status(new_volume, 'Available'))
 
+        volumes_page = volumes_snapshot_page.switch_to_volumes_tab()
+        volumes_page.delete_volume(new_volume)
+        self.assertTrue(
+            volumes_page.find_message_and_dismiss(messages.SUCCESS))
+        self.assertFalse(volumes_page.find_message_and_dismiss(messages.ERROR))
+        self.assertTrue(volumes_page.is_volume_deleted(new_volume))
+
         volumes_snapshot_page = self.volumes_snapshot_page
         volumes_snapshot_page.delete_volume_snapshot(self.VOLUME_SNAPSHOT_NAME)
         self.assertTrue(
@@ -243,10 +246,3 @@ class TestVolumeSnapshotsAdvanced(helpers.TestCase):
             volumes_snapshot_page.find_message_and_dismiss(messages.ERROR))
         self.assertTrue(volumes_snapshot_page.is_volume_snapshot_deleted(
             self.VOLUME_SNAPSHOT_NAME))
-
-        volumes_page = volumes_snapshot_page.switch_to_volumes_tab()
-        volumes_page.delete_volume(new_volume)
-        self.assertTrue(
-            volumes_page.find_message_and_dismiss(messages.SUCCESS))
-        self.assertFalse(volumes_page.find_message_and_dismiss(messages.ERROR))
-        self.assertTrue(volumes_page.is_volume_deleted(new_volume))
