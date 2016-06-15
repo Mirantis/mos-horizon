@@ -208,7 +208,9 @@ class VolumesPage(basepage.BaseNavigationPage):
         volume_form.size.value = volume_size
         if volume_source_type != "Volume":
             if set_type:
-                volume_form.type.value = self.conf.volume.volume_type
+                value = [o.text for o in volume_form.type.element.options][-1]
+                volume_form.type.element.select_by_visible_text(value)
+
             volume_form.availability_zone.value = \
                 self.conf.launch_instances.available_zone
         volume_form.submit()
@@ -239,10 +241,16 @@ class VolumesPage(basepage.BaseNavigationPage):
         name_link.click()
 
     def set_type(self, name, volume_type=None):
-        volume_type = volume_type or self.conf.volume.volume_type
         row = self._get_row_with_volume_name(name)
         volume_type_form = self.volumes_table.set_volume_type(row)
-        volume_type_form.volume_type.value = volume_type
+
+        if not volume_type:
+            value = [o.text for o in
+                     volume_type_form.volume_type.element.options][-1]
+            volume_type_form.volume_type.element.select_by_visible_text(value)
+        else:
+            volume_type_form.volume_type.value = volume_type
+
         volume_type_form.submit()
 
     def delete_volumes(self, *names):
