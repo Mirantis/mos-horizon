@@ -10,6 +10,8 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from time import sleep
+
 from selenium.webdriver.common.by import By
 
 from openstack_dashboard.test.integration_tests.pages import basepage
@@ -110,6 +112,7 @@ class ContainersPage(basepage.BaseNavigationPage):
         else:
             create_container_form.public.unmark()
         create_container_form.submit()
+        sleep(2)  # wait container creation
 
     def get_public_container_link(self, name):
         container = self.get_container(name)
@@ -143,6 +146,7 @@ class ContainersPage(basepage.BaseNavigationPage):
             field_mappings=self.UPLOAD_FILE_FORM_FIELDS)
         upload_file_form.file.choose(file_name)
         upload_file_form.submit()
+        sleep(2)  # wait file upload
 
     def create_folder(self, folder_name):
         self.objects_table.create_folder_button.click()
@@ -151,6 +155,7 @@ class ContainersPage(basepage.BaseNavigationPage):
             field_mappings=self.CREATE_FOLDER_FORM_FIELDS)
         create_folder_form.name.text = folder_name
         create_folder_form.submit()
+        sleep(2)  # wait folder creation
 
     def delete_object(self, object_name):
         self.objects_table.delete_row(object_name)
