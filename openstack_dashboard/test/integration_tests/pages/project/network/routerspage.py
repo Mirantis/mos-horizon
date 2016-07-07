@@ -57,7 +57,7 @@ class RoutersTable(tables.TableRegion):
 class RoutersPage(basepage.BaseNavigationPage):
 
     DEFAULT_ADMIN_STATE_UP = 'True'
-    DEFAULT_EXTERNAL_NETWORK = 'public'
+    DEFAULT_EXTERNAL_NETWORK = 'admin_floating_net'
     ROUTERS_TABLE_NAME_COLUMN = 'name'
     ROUTERS_TABLE_STATUS_COLUMN = 'status'
     ROUTERS_TABLE_NETWORK_COLUMN = 'ext_net'
@@ -81,8 +81,10 @@ class RoutersPage(basepage.BaseNavigationPage):
                       external_network=DEFAULT_EXTERNAL_NETWORK):
         create_router_form = self.routers_table.create_router()
         create_router_form.name.text = name
-        create_router_form.admin_state_up.value = admin_state_up
-        create_router_form.external_network.text = external_network
+        if admin_state_up:
+            create_router_form.admin_state_up.value = admin_state_up
+        if external_network:
+            create_router_form.external_network.text = external_network
         create_router_form.submit()
 
     def set_gateway(self, router_id,
@@ -108,15 +110,12 @@ class RoutersPage(basepage.BaseNavigationPage):
         return bool(self._get_row_with_router_name(name))
 
     def is_router_active(self, name):
-        row = self._get_row_with_router_name(name)
 
         def cell_getter():
-            return row.cells[self.ROUTERS_TABLE_STATUS_COLUMN]
-        try:
-            self._wait_till_text_present_in_element(cell_getter, 'Active')
-        except exceptions.TimeoutException:
-            return False
-        return True
+            row = self._get_row_with_router_name(name)
+            return row and row.cells[self.ROUTERS_TABLE_STATUS_COLUMN]
+
+        return self.routers_table.wait_cell_status(cell_getter, 'Active')
 
     def is_gateway_cleared(self, name):
         row = self._get_row_with_router_name(name)

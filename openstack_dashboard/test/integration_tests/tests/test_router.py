@@ -11,12 +11,10 @@
 #    under the License.
 
 
-from openstack_dashboard.test.integration_tests import decorators
 from openstack_dashboard.test.integration_tests import helpers
 from openstack_dashboard.test.integration_tests.regions import messages
 
 
-@decorators.services_required("neutron")
 class TestRouters(helpers.TestCase):
     ROUTER_NAME = helpers.gen_random_resource_name("router")
 
@@ -170,7 +168,9 @@ class TestAdminRouters(helpers.AdminTestCase):
         """
         routers_page = self.home_pg.go_to_network_routerspage()
 
-        routers_page.create_router(self.ROUTER_NAME)
+        routers_page.create_router(self.ROUTER_NAME,
+                                   admin_state_up=None,
+                                   external_network=None)
         self.assertTrue(
             routers_page.find_message_and_dismiss(messages.SUCCESS))
         self.assertFalse(routers_page.find_message_and_dismiss(messages.ERROR))
@@ -198,3 +198,10 @@ class TestAdminRouters(helpers.AdminTestCase):
         self.assertFalse(
             admin_routers_page.find_message_and_dismiss(messages.ERROR))
         self.assertFalse(admin_routers_page.is_router_present(new_name))
+            routers_page.find_message_and_dismiss(messages.SUCCESS))
+        self.assertFalse(routers_page.find_message_and_dismiss(messages.ERROR))
+        self.assertFalse(routers_page.is_router_present(self.ROUTER_NAME))
+
+
+class TestAdminRouters(TestRouters, helpers.AdminTestCase):
+    ROUTER_NAME = helpers.gen_random_resource_name("router")
