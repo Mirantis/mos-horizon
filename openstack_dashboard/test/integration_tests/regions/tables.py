@@ -245,7 +245,8 @@ def bind_table_action(action_name):
             action_element = None
             for action in actions:
                 target_action_id = '%s__action_%s' % (table.name, action_name)
-                if action.get_attribute('id') == target_action_id:
+                if action.get_attribute('id').lower() == \
+                        target_action_id.lower():
                     action_element = action
                     break
             if action_element is None:

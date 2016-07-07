@@ -85,6 +85,46 @@ class TestNetworks(helpers.TestCase):
         networks_page = overview.delete_network()
         self.assertFalse(networks_page.is_network_present(self.NETWORK_NAME))
 
+    def test_create_distributed_router(self):
+        router_name = helpers.gen_random_resource_name("router")
+        routers_page = self.home_pg.go_to_network_routerspage()
+        routers_page.create_router(router_name,
+                                   admin_state_up=None,
+                                   external_network=None)
+        self.assertTrue(
+            routers_page.find_message_and_dismiss(messages.SUCCESS))
+        self.assertFalse(routers_page.find_message_and_dismiss(messages.ERROR))
+        self.assertTrue(routers_page.is_router_present(router_name))
+        self.assertTrue(routers_page.is_router_active(router_name))
+
+        self.home_pg.log_out()
+        self.home_pg = self.login_pg.login(self.ADMIN_NAME,
+                                           self.ADMIN_PASSWORD)
+        self.home_pg.change_project(self.ADMIN_PROJECT)
+
+        routers_page = self.home_pg.go_to_system_routerspage()
+
+        def delete_router():
+            routers_page.delete_router(router_name)
+            self.assertTrue(
+                routers_page.find_message_and_dismiss(messages.SUCCESS))
+            self.assertFalse(
+                routers_page.find_message_and_dismiss(messages.ERROR))
+            self.assertFalse(routers_page.is_router_present(router_name))
+
+        try:
+            router_info = routers_page.get_router_info(router_name)
+        except KeyError as e:
+            if e.args[0] == 'mode':
+                routers_page.refresh_page()
+                delete_router()
+                self.skipTest("Distributed mode is not supported")
+            else:
+                raise
+
+        self.assertEqual(router_info['mode'], 'distributed')
+        delete_router()
+
 
 class TestAdminNetworks(helpers.AdminTestCase):
     NETWORK_NAME = helpers.gen_random_resource_name("network")
