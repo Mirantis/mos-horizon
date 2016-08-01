@@ -18,8 +18,8 @@ from openstack_dashboard.test.integration_tests.pages import basepage
 from openstack_dashboard.test.integration_tests.regions import forms
 from openstack_dashboard.test.integration_tests.pages.project.compute. \
     instancespage import InstanceFormNG
-from openstack_dashboard.test.integration_tests.pages.project.compute. \
-    instancespage import InstancesTable
+from openstack_dashboard.test.integration_tests.pages.project.network.\
+    routerspage import RoutersTable
 from openstack_dashboard.test.integration_tests import basewebobject
 
 
@@ -42,6 +42,8 @@ class NetworktopologyPage(basepage.BaseNavigationPage):
     DEFAULT_VOLUME_CREATION_NG = 'No'
     DEFAULT_BOOT_SOURCE_NAME_NG = 'TestVM'
     DEFAULT_NETWORK_NG = "admin_internal_net"
+
+    DEFAULT_EXT_NETWORK = "admin_floating_net"
 
     @property
     def topology(self):
@@ -71,6 +73,13 @@ class NetworktopologyPage(basepage.BaseNavigationPage):
         self.launch_instance_btn.click()
         return InstanceFormNG(self.driver, self.conf)
 
+    def create_router_action(self):
+        self._get_element(*self._create_router).click()
+        return forms.FormRegion(
+            self.driver,
+            self.conf,
+            field_mappings=RoutersTable.CREATE_ROUTER_FORM_FIELDS)
+
     def create_instance(self, instance_name,
                         availability_zone=None,
                         instance_count=DEFAULT_COUNT,
@@ -98,6 +107,14 @@ class NetworktopologyPage(basepage.BaseNavigationPage):
         instance_form.switch_to(3)
         instance_form.networks.allocate_item(name=network)
         instance_form.submit()
+
+    def create_router(self, name, admin_state_up='True',
+                      external_network=DEFAULT_EXT_NETWORK):
+        create_router_form = self.create_router_action()
+        create_router_form.name.text = name
+        create_router_form.admin_state_up.value = admin_state_up
+        create_router_form.external_network.text = external_network
+        create_router_form.submit()
 
     def _is_labels_visible(self):
         return self.toggle_labels.get_attribute('class').endswith('active')
@@ -213,8 +230,8 @@ class TopologyCanvas(basepage.BasePage):
         item[0].click()
         return TopologyBalloon(self.driver, self.conf)
 
-    def delete_instance(self, instance):
-        delete_form = self._open_balloon(instance).delete()
+    def delete(self, item):
+        delete_form = self._open_balloon(item).delete()
         delete_form.submit()
         self.wait_till_balloon_disappears()
 

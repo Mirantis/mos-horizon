@@ -16,6 +16,8 @@ from openstack_dashboard.test.integration_tests.regions import messages
 
 INSTANCE_NAME = helpers.gen_random_resource_name('instance',
                                                  timestamp=False)
+ROUTER_NAME = helpers.gen_random_resource_name('router',
+                                               timestamp=False)
 
 
 @decorators.services_required("neutron")
@@ -27,7 +29,7 @@ class TestNetworkTopology(helpers.AdminTestCase):
         topology_page.topology.wait_for_svg_loads()
         vms = topology_page.topology.get_instances()
         for vm in vms:
-            topology_page.topology.delete_instance(vm)
+            topology_page.topology.delete(vm)
             topology_page.find_message_and_dismiss(messages.SUCCESS)
             self.assertFalse(
                 topology_page.find_message_and_dismiss(messages.ERROR))
@@ -78,7 +80,7 @@ class TestNetworkTopology(helpers.AdminTestCase):
         self.assertFalse(net_topology_page.topology.
                          is_link_between_nodes_available(int_net, ext_net))
 
-        net_topology_page.topology.delete_instance(vm)
+        net_topology_page.topology.delete(vm)
         net_topology_page.find_message_and_dismiss(messages.SUCCESS)
         self.assertFalse(
             net_topology_page.find_message_and_dismiss(messages.ERROR))
@@ -134,7 +136,48 @@ class TestNetworkTopology(helpers.AdminTestCase):
                             is_link_between_nodes_available(vm, int_net))
 
         for vm in vms:
-            net_topology_page.topology.delete_instance(vm)
+            net_topology_page.topology.delete(vm)
             net_topology_page.find_message_and_dismiss(messages.SUCCESS)
             self.assertFalse(
                 net_topology_page.find_message_and_dismiss(messages.ERROR))
+
+    def test_create_delete_router_from_network_topology(self):
+        """This test checks creation and deletion router from network topology
+        page
+        Steps:
+        1) Login to Horizon Dashboard as regular user
+        2) Go to Project > Network > Network Topology page
+        3) Select 'Create Router' button
+        4) From appeared form enter router name, select admin state 'UP' and
+        'public' as external network > 'Create Router'
+        5) Wait for SVG fully loading (wait for stable state)
+        6) Check that router is visible, connected to the public network and is
+        not connected to the private network
+        7) Open router's balloon > 'Delete Router' button. Check that router
+        is deleted.
+        """
+        topology_page = self.home_pg.go_to_network_networktopologypage()
+        topology_page.create_router(ROUTER_NAME)
+        self.assertTrue(
+            topology_page.find_message_and_dismiss(messages.SUCCESS))
+        self.assertFalse(
+            topology_page.find_message_and_dismiss(messages.ERROR))
+        topology_page.topology.wait_for_svg_loads()
+        topology_page.show_labels()
+
+        ext_net = topology_page.topology.get_external_networks()[0]
+        int_net = topology_page.topology.get_internal_networks()[0]
+        routers = topology_page.topology.get_routers()
+        router = [x for x in routers if x[1][2] == ROUTER_NAME][0]
+        self.assertTrue(topology_page.topology.
+                        is_link_between_nodes_available(router, ext_net))
+        self.assertFalse(topology_page.topology.
+                         is_link_between_nodes_available(router, int_net))
+
+        topology_page.topology.delete(router)
+        self.assertTrue(
+            topology_page.find_message_and_dismiss(messages.SUCCESS))
+        topology_page.topology.wait_for_svg_loads()
+        routers = topology_page.topology.get_routers()
+        target_routers = [x for x in routers if x[1][2] == ROUTER_NAME]
+        self.assertTrue(len(target_routers) == 0)
