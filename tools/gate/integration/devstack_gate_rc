@@ -1,6 +1,0 @@
-# This file contains various customized Devstack settings that Horizon uses at
-# gate for integration tests job
-
-export ENABLED_SERVICES=heat,h-eng,h-api,h-api-cfn,h-api-cw  # enable heat
-export ENABLED_SERVICES+=,s-proxy,s-object,s-container,s-account  # enable swift
-export ENABLED_SERVICES+=,c-bak  # enable cinder backup
