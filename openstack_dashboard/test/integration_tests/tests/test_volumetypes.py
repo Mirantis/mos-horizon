@@ -53,15 +53,8 @@ class TestAdminVolumeTypes(helpers.AdminTestCase):
 class TestQoSSpec(helpers.AdminTestCase):
     QOS_SPEC_NAME = helpers.gen_random_resource_name("qos_spec")
 
-    def test_qos_spec_create_delete(self):
-        """tests the QoS Spec creation and deletion functionality
-        * creates a new QoS Spec
-        * verifies the QoS Spec appears in the QoS Specs table
-        * deletes the newly created QoS Spec
-        * verifies the QoS Spec does not appear in the table after deletion
-        """
+    def create_qos(self):
         qos_spec_page = self.home_pg.go_to_system_volumes_volumetypespage()
-
         qos_spec_page.create_qos_spec(self.QOS_SPEC_NAME)
         self.assertTrue(
             qos_spec_page.find_message_and_dismiss(messages.SUCCESS))
@@ -69,9 +62,63 @@ class TestQoSSpec(helpers.AdminTestCase):
             qos_spec_page.find_message_and_dismiss(messages.ERROR))
         self.assertTrue(qos_spec_page.is_qos_spec_present(self.QOS_SPEC_NAME))
 
+    def delete_qos(self):
+        qos_spec_page = self.home_pg.go_to_system_volumes_volumetypespage()
         qos_spec_page.delete_qos_specs(self.QOS_SPEC_NAME)
         self.assertTrue(
             qos_spec_page.find_message_and_dismiss(messages.SUCCESS))
         self.assertFalse(
             qos_spec_page.find_message_and_dismiss(messages.ERROR))
         self.assertFalse(qos_spec_page.is_qos_spec_present(self.QOS_SPEC_NAME))
+
+    def test_qos_spec_create_delete(self):
+        """tests the QoS Spec creation and deletion functionality
+        * creates a new QoS Spec
+        * verifies the QoS Spec appears in the QoS Specs table
+        * deletes the newly created QoS Spec
+        * verifies the QoS Spec does not appear in the table after deletion
+        """
+        self.create_qos()
+        self.delete_qos()
+
+    def test_qos_spec_edit_consumer(self):
+        """tests Edit Consumer of QoS Spec functionality
+        * creates a new QoS Spec
+        * verifies the QoS Spec appears in the QoS Specs table
+        * edit consumer of created QoS Spec (check all options - front-end,
+        both, back-end)
+        * verifies current consumer of the QoS Spec in the QoS Specs table
+        * deletes the newly created QoS Spec
+        * verifies the QoS Spec does not appear in the table after deletion
+        """
+        nova_consumer = 'front-end'
+        both_consumers = 'both'
+        cinder_consumer = 'back-end'
+
+        self.create_qos()
+        qos_spec_page = self.home_pg.go_to_system_volumes_volumetypespage()
+        qos_spec_page.edit_consumer(self.QOS_SPEC_NAME, nova_consumer)
+        self.assertTrue(
+            qos_spec_page.find_message_and_dismiss(messages.SUCCESS))
+        self.assertFalse(
+            qos_spec_page.find_message_and_dismiss(messages.ERROR))
+        self.assertEqual(
+            qos_spec_page.get_consumer(self.QOS_SPEC_NAME), nova_consumer)
+
+        qos_spec_page.edit_consumer(self.QOS_SPEC_NAME, both_consumers)
+        self.assertTrue(
+            qos_spec_page.find_message_and_dismiss(messages.SUCCESS))
+        self.assertFalse(
+            qos_spec_page.find_message_and_dismiss(messages.ERROR))
+        self.assertEqual(
+            qos_spec_page.get_consumer(self.QOS_SPEC_NAME), both_consumers)
+
+        qos_spec_page.edit_consumer(self.QOS_SPEC_NAME, cinder_consumer)
+        self.assertTrue(
+            qos_spec_page.find_message_and_dismiss(messages.SUCCESS))
+        self.assertFalse(
+            qos_spec_page.find_message_and_dismiss(messages.ERROR))
+        self.assertEqual(
+            qos_spec_page.get_consumer(self.QOS_SPEC_NAME), cinder_consumer)
+
+        self.delete_qos()
