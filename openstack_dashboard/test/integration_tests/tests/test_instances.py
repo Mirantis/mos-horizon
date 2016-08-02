@@ -70,7 +70,7 @@ class TestAdminInstances(helpers.AdminTestCase):
         self.assertFalse(
             instances_page.find_message_and_dismiss(messages.ERROR))
         self.assertSequenceTrue([instances_page.is_instance_deleted(name)
-                                for name in instance_names])
+                                 for name in instance_names])
 
     def test_lock_instance(self):
         instances_page = self.create_instance()
@@ -276,3 +276,156 @@ class TestAdminInstances(helpers.AdminTestCase):
             self.assertTrue(
                 instances_page.find_message_and_dismiss(messages.SUCCESS))
             self.assertTrue(instances_page.is_instance_deleted(instance))
+
+
+class TestInstanceActions(helpers.AdminTestCase):
+
+    INSTANCE_NAME = helpers.gen_random_resource_name('instance',
+                                                     timestamp=False)
+    SNAPSHOT_NAME = helpers.gen_random_resource_name("snapshot")
+
+    def setUp(self):
+        super(TestInstanceActions, self).setUp()
+        instances_page = self.home_pg.go_to_compute_instancespage()
+        instances_page.create_instance_ng(self.INSTANCE_NAME)
+        instances_page.find_message_and_dismiss(messages.SUCCESS)
+        self.assertTrue(
+            instances_page.is_instance_active(self.INSTANCE_NAME))
+
+        def cleanup():
+            # cleanup images
+            images_page = self.home_pg.go_to_compute_imagespage()
+            if images_page.is_image_present(self.SNAPSHOT_NAME):
+                images_page.delete_image(self.SNAPSHOT_NAME)
+                images_page.find_message_and_dismiss(messages.SUCCESS)
+                self.assertFalse(
+                    images_page.is_image_present(self.SNAPSHOT_NAME))
+
+            # cleanup instances
+            instances_page = self.home_pg.go_to_compute_instancespage()
+            instances_page.delete_instance(self.INSTANCE_NAME)
+            instances_page.find_message_and_dismiss(messages.SUCCESS)
+            self.assertTrue(
+                instances_page.is_instance_deleted(self.INSTANCE_NAME))
+
+        self.addCleanup(cleanup)
+
+    def test_soft_reboot_instance(self):
+        """This test checks soft reboot instance action
+        Steps:
+        1) Login to Horizon dashboard as regular user
+        2) Go to Project > Compute > Instances page
+        3) Create 1 instance. Wait until instance got Active status.
+        4) Click dropdown menu in Instance`s row > click "Soft Reboot Instance"
+        5) Confirm by Soft Reboot Instance button
+        6) Wait until instance is being rebooted and returned to Active status
+        7) Delete instance from Project > Compute > Instances page
+        """
+        instances_page = self.home_pg.go_to_compute_instancespage()
+        instances_page.soft_reboot(self.INSTANCE_NAME)
+        instances_page.find_message_and_dismiss(messages.SUCCESS)
+        self.assertFalse(
+            instances_page.find_message_and_dismiss(messages.ERROR))
+        self.assertTrue(
+            instances_page.is_instance_rebooting(self.INSTANCE_NAME))
+        self.assertTrue(
+            instances_page.is_instance_active(self.INSTANCE_NAME))
+
+    def test_soft_reboot_instance_from_admin_page(self):
+        """This test checks soft reboot instance action
+        Steps:
+        1) Login to Horizon dashboard as regular user
+        2) Go to Project > Compute > Instances page
+        3) Create 1 instance. Wait until instance got Active status.
+        4) Click dropdown menu in Instance`s row > click "Soft Reboot Instance"
+        5) Confirm by Soft Reboot Instance button
+        6) Wait until instance is being rebooted and returned to Active status
+        7) Delete instance from Project > Compute > Instances page
+        """
+        instances_page = self.home_pg.go_to_system_instancespage()
+        instances_page.soft_reboot(self.INSTANCE_NAME)
+        instances_page.find_message_and_dismiss(messages.SUCCESS)
+        self.assertFalse(
+            instances_page.find_message_and_dismiss(messages.ERROR))
+        self.assertTrue(
+            instances_page.is_instance_rebooting(self.INSTANCE_NAME))
+        self.assertTrue(
+            instances_page.is_instance_active(self.INSTANCE_NAME))
+
+    def test_create_instance_snapshot(self):
+        """This test checks create instance snapshot action
+        Steps:
+        1) Login to Horizon dashboard as regular user
+        2) Go to Project > Compute > Instances page
+        3) Create 1 instance. Wait until instance got Active status.
+        4) Click Create Snapshot button in Instance`s row.
+        5) Enter snapshot name in appeared Create Snapshot form and then select
+        Create Snapshot button
+        6) Wait until snapshot (image) got to Active status
+        7) Delete created snapshot from Project > Compute > Images page
+        8) Delete instance from Project > Compute > Instances page
+        """
+        instances_page = self.home_pg.go_to_compute_instancespage()
+        instances_page.create_snapshot(self.INSTANCE_NAME, self.SNAPSHOT_NAME)
+        instances_page.find_message_and_dismiss(messages.SUCCESS)
+        self.assertFalse(
+            instances_page.find_message_and_dismiss(messages.ERROR))
+        images_page = self.home_pg.go_to_compute_imagespage()
+        self.assertTrue(images_page.is_image_present(self.SNAPSHOT_NAME))
+        self.assertTrue(images_page.is_image_active(self.SNAPSHOT_NAME))
+
+    def test_resize_instance_with_confirm(self):
+        """This test checks resize instance action
+        Steps:
+        1) Login to Horizon dashboard as regular user
+        2) Go to Project > Compute > Instances page
+        3) Create 1 instance. Wait until instance got Active status.
+        4) Click dropdown menu in Instance`s row > click "Resize Instance"
+        5) From opened form select 'm1.small' flavor > select Resize button.
+        Check that Instance returns to status "Confirm or Revert Resize/
+        Migrate", size column has 'm1.small' flavor value.
+        6) Select Confirm Resize/Migrate button in Instance`s row. Check that
+        Instance returns to status Active, size column has 'm1.small' flavor.
+        7) Delete instance from Project > Compute > Instances page
+        """
+        instances_page = self.home_pg.go_to_compute_instancespage()
+        instances_page.resize_instance(self.INSTANCE_NAME, 'm1.small')
+        instances_page.find_message_and_dismiss(messages.SUCCESS)
+        self.assertFalse(
+            instances_page.find_message_and_dismiss(messages.ERROR))
+        self.assertTrue(
+            instances_page.is_instance_resizing(self.INSTANCE_NAME))
+        instances_page.confirm_resize(self.INSTANCE_NAME)
+        self.assertTrue(
+            instances_page.is_instance_active(self.INSTANCE_NAME))
+        self.assertTrue(instances_page.is_size_correct(
+            self.INSTANCE_NAME, 'm1.small'))
+
+    def test_resize_instance_with_revert(self):
+        """This test checks resize instance action
+        Steps:
+        1) Login to Horizon dashboard as regular user
+        2) Go to Project > Compute > Instances page
+        3) Create 1 instance. Wait until instance got Active status.
+        4) Click dropdown menu in Instance`s row > click "Resize Instance"
+        5) From opened form select 'm1.small' flavor > select Resize button.
+        Check that Instance returns to status "Confirm or Revert Resize/
+        Migrate", size column has 'm1.small' flavor value.
+        6) Select Revert Resize/Migrate button in Instance`s row. Check that
+        Instance returns to status Active, size column has 'm1.tiny' flavor.
+        7) Delete instance from Project > Compute > Instances page
+        """
+        instances_page = self.home_pg.go_to_compute_instancespage()
+        instances_page.resize_instance(self.INSTANCE_NAME, 'm1.small')
+        instances_page.find_message_and_dismiss(messages.SUCCESS)
+        self.assertFalse(
+            instances_page.find_message_and_dismiss(messages.ERROR))
+        self.assertTrue(
+            instances_page.is_instance_resizing(self.INSTANCE_NAME))
+        self.assertTrue(instances_page.is_size_correct(
+            self.INSTANCE_NAME, 'm1.small'))
+        instances_page.revert_resize(self.INSTANCE_NAME)
+        self.assertTrue(
+            instances_page.is_instance_active(self.INSTANCE_NAME))
+        self.assertTrue(instances_page.is_size_correct(
+            self.INSTANCE_NAME, 'm1.tiny'))

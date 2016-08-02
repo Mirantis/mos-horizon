@@ -48,6 +48,9 @@ class InstancesTable(tables.TableRegion):
         ("script_source", "script_upload", "script_data"),
         ("disk_config", "config_drive")
     )
+    RESIZE_INSTANCE_FORM_FIELDS = (("old_flavor_name", "flavor"),
+                                   "disk_config")
+    CREATE_SNAPSHOT_FORM_FIELDS = ("name", )
 
     @tables.bind_table_action('launch')
     def launch_instance(self, launch_button):
@@ -79,6 +82,33 @@ class InstancesTable(tables.TableRegion):
     def unlock_instance(self, unlock_button, row):
         unlock_button.click()
 
+    @tables.bind_row_action('soft_reboot')
+    def soft_reboot_instance(self, soft_reboot_button, row):
+        soft_reboot_button.click()
+        return forms.BaseFormRegion(self.driver, self.conf)
+
+    @tables.bind_row_action('snapshot')
+    def create_instance_snapshot(self, create_snapshot_button, row):
+        create_snapshot_button.click()
+        return forms.FormRegion(
+            self.driver, self.conf,
+            field_mappings=self.CREATE_SNAPSHOT_FORM_FIELDS)
+
+    @tables.bind_row_action('resize')
+    def resize_instance(self, resize_instance_button, row):
+        resize_instance_button.click()
+        return forms.TabbedFormRegion(
+            self.driver, self.conf,
+            field_mappings=self.RESIZE_INSTANCE_FORM_FIELDS)
+
+    @tables.bind_row_action('confirm')
+    def confirm_resize_instance(self, confirm_resize_button, row):
+        confirm_resize_button.click()
+
+    @tables.bind_row_action('revert')
+    def revert_resize_instance(self, revert_resize_button, row):
+        revert_resize_button.click()
+
 
 class InstancesPage(basepage.BaseNavigationPage):
 
@@ -95,6 +125,7 @@ class InstancesPage(basepage.BaseNavigationPage):
     INSTANCES_TABLE_STATUS_COLUMN = 'status'
     INSTANCES_TABLE_IP_COLUMN = 'ip'
     INSTANCES_TABLE_IMAGE_NAME_COLUMN = 'image_name'
+    INSTANCES_TABLE_SIZE_COLUMN = 'size'
 
     DEFAULT_BOOT_SOURCE_NG = 'image'
     DEFAULT_VOLUME_CREATION_NG = 'No'
@@ -223,6 +254,57 @@ class InstancesPage(basepage.BaseNavigationPage):
         status = self.instances_table.wait_cell_status(cell_getter,
                                                        ('Active', 'Error'))
         return status == 'Active'
+
+    def soft_reboot(self, name):
+        row = self._get_row_with_instance_name(name)
+        confirm__form = self.instances_table.soft_reboot_instance(row)
+        confirm__form.submit()
+
+    def create_snapshot(self, name, snapshot_name):
+        row = self._get_row_with_instance_name(name)
+        create_form = self.instances_table.create_instance_snapshot(row)
+        create_form.name.text = snapshot_name
+        create_form.submit()
+
+    def resize_instance(self, name, new_flavor):
+        row = self._get_row_with_instance_name(name)
+        resize_form = self.instances_table.resize_instance(row)
+        resize_form.flavor.text = new_flavor
+        resize_form.submit()
+
+    def is_instance_rebooting(self, name):
+        def cell_getter():
+            row = self._get_row_with_instance_name(name)
+            return row and row.cells[self.INSTANCES_TABLE_STATUS_COLUMN]
+
+        status = self.instances_table.wait_cell_status(cell_getter,
+                                                       ('Reboot', 'Error'))
+        return status == 'Reboot'
+
+    def is_instance_resizing(self, name):
+        def cell_getter():
+            row = self._get_row_with_instance_name(name)
+            return row and row.cells[self.INSTANCES_TABLE_STATUS_COLUMN]
+
+        status = self.instances_table.wait_cell_status(
+            cell_getter, ("Confirm or Revert Resize/Migrate", "Error"))
+        return status == "Confirm or Revert Resize/Migrate"
+
+    def confirm_resize(self, name):
+        row = self._get_row_with_instance_name(name)
+        self.instances_table.confirm_resize_instance(row)
+
+    def revert_resize(self, name):
+        row = self._get_row_with_instance_name(name)
+        self.instances_table.revert_resize_instance(row)
+
+    def is_size_correct(self, instance_name, size):
+        def cell_getter():
+            row = self._get_row_with_instance_name(instance_name)
+            return row and row.cells[self.INSTANCES_TABLE_SIZE_COLUMN]
+
+        actual_size = self.instances_table.wait_cell_status(cell_getter, size)
+        return actual_size == size
 
     def _get_source_name(self, instance, boot_source,
                          conf):
