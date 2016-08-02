@@ -18,6 +18,10 @@ INSTANCE_NAME = helpers.gen_random_resource_name('instance',
                                                  timestamp=False)
 ROUTER_NAME = helpers.gen_random_resource_name('router',
                                                timestamp=False)
+NETWORK_NAME = helpers.gen_random_resource_name('network',
+                                                timestamp=False)
+SUBNET_NAME = helpers.gen_random_resource_name('subnet',
+                                               timestamp=False)
 
 
 @decorators.services_required("neutron")
@@ -25,14 +29,19 @@ class TestNetworkTopology(helpers.AdminTestCase):
 
     def setUp(self):
         super(TestNetworkTopology, self).setUp()
-        topology_page = self.home_pg.go_to_network_networktopologypage()
-        topology_page.topology.wait_for_svg_loads()
-        vms = topology_page.topology.get_instances()
-        for vm in vms:
-            topology_page.topology.delete(vm)
-            topology_page.find_message_and_dismiss(messages.SUCCESS)
-            self.assertFalse(
-                topology_page.find_message_and_dismiss(messages.ERROR))
+
+        def cleanup():
+            topology_page = self.home_pg.go_to_network_networktopologypage()
+            topology_page.topology.wait_for_svg_loads()
+            vms = topology_page.topology.get_instances()
+
+            for vm in vms:
+                topology_page.topology.delete(vm)
+                topology_page.find_message_and_dismiss(messages.SUCCESS)
+                self.assertFalse(
+                    topology_page.find_message_and_dismiss(messages.ERROR))
+
+        self.addCleanup(cleanup)
 
     def test_create_delete_instance_from_network_topology(self):
         """This test checks create/delete instance from network topology page
@@ -80,15 +89,6 @@ class TestNetworkTopology(helpers.AdminTestCase):
         self.assertFalse(net_topology_page.topology.
                          is_link_between_nodes_available(int_net, ext_net))
 
-        net_topology_page.topology.delete(vm)
-        net_topology_page.find_message_and_dismiss(messages.SUCCESS)
-        self.assertFalse(
-            net_topology_page.find_message_and_dismiss(messages.ERROR))
-
-        net_topology_page.topology.wait_for_svg_loads()
-        vms = net_topology_page.topology.get_instances()
-        self.assertEqual(len(vms), 0)
-
     def test_toggle_network(self):
         """This test checks possibility to collapse/expand network
             Steps:
@@ -123,6 +123,7 @@ class TestNetworkTopology(helpers.AdminTestCase):
 
         net_topology_page.expand_network()
         net_topology_page.topology.wait_for_svg_loads()
+        net_topology_page.show_labels()
         vms = net_topology_page.topology.get_instances()
         int_net = net_topology_page.topology.get_internal_networks()[0]
         self.assertEqual(len(vms), count)
@@ -134,12 +135,6 @@ class TestNetworkTopology(helpers.AdminTestCase):
         for vm in vms:
             self.assertTrue(net_topology_page.topology.
                             is_link_between_nodes_available(vm, int_net))
-
-        for vm in vms:
-            net_topology_page.topology.delete(vm)
-            net_topology_page.find_message_and_dismiss(messages.SUCCESS)
-            self.assertFalse(
-                net_topology_page.find_message_and_dismiss(messages.ERROR))
 
     def test_create_delete_router_from_network_topology(self):
         """This test checks creation and deletion router from network topology
@@ -175,9 +170,81 @@ class TestNetworkTopology(helpers.AdminTestCase):
                          is_link_between_nodes_available(router, int_net))
 
         topology_page.topology.delete(router)
-        self.assertTrue(
-            topology_page.find_message_and_dismiss(messages.SUCCESS))
+        topology_page.find_message_and_dismiss(messages.SUCCESS)
+        self.assertFalse(
+            topology_page.find_message_and_dismiss(messages.ERROR))
         topology_page.topology.wait_for_svg_loads()
         routers = topology_page.topology.get_routers()
         target_routers = [x for x in routers if x[1][2] == ROUTER_NAME]
         self.assertTrue(len(target_routers) == 0)
+
+    def test_connectors_sanity(self):
+        """This test checks connection VM - Network - Router - public Network
+        Steps:
+        1) Login to Horizon Dashboard as regular user
+        2) Go to Project > Network > Network Topology page
+        3) Create private network, create router, connect created network to
+        router by adding appropriate interface to router
+        4) Create instance with network from step 3
+        5) Wait for SVG fully loading (wait for stable state)
+        6) Check connectivity: Instance - Network - Router - public Network
+        7) Delete router, instance, network
+        """
+        topology_page = self.home_pg.go_to_network_networktopologypage()
+        topology_page.create_network(NETWORK_NAME, SUBNET_NAME,
+                                     disable_gateway=False)
+        topology_page.find_message_and_dismiss(messages.SUCCESS)
+        topology_page.topology.wait_for_svg_loads()
+
+        topology_page.create_router(ROUTER_NAME)
+        topology_page.find_message_and_dismiss(messages.SUCCESS)
+        self.assertFalse(
+            topology_page.find_message_and_dismiss(messages.ERROR))
+        topology_page.topology.wait_for_svg_loads()
+        topology_page.show_labels()
+
+        routers = topology_page.topology.get_routers()
+        router = [x for x in routers if x[1][2] == ROUTER_NAME][0]
+        topology_page.topology.add_interface_to_router(router, SUBNET_NAME)
+
+        topology_page.topology.wait_for_svg_loads()
+        topology_page.create_instance(INSTANCE_NAME, network=NETWORK_NAME)
+        topology_page.find_message_and_dismiss(messages.SUCCESS)
+
+        topology_page.topology.wait_for_svg_loads()
+        vm = topology_page.topology.get_instances()[0]
+        self.assertTrue(topology_page.topology.is_status_active(vm))
+
+        topology_page.topology.wait_for_svg_loads()
+        routers = topology_page.topology.get_routers()
+        networks = topology_page.topology.get_internal_networks()
+        instances = topology_page.topology.get_instances()
+
+        router = [x for x in routers if x[1][2] == ROUTER_NAME][0]
+        network = [x for x in networks if x[1][2] == NETWORK_NAME][0]
+        instance = [x for x in instances if x[1][2] == INSTANCE_NAME][0]
+        ext_net = topology_page.topology.get_external_networks()[0]
+        self.assertTrue(topology_page.topology.
+                        is_link_between_nodes_available(ext_net, router))
+        self.assertTrue(topology_page.topology.
+                        is_link_between_nodes_available(router, network))
+        self.assertTrue(topology_page.topology.
+                        is_link_between_nodes_available(network, instance))
+
+        topology_page.topology.delete(router)
+        topology_page.find_message_and_dismiss(messages.SUCCESS)
+        self.assertFalse(
+            topology_page.find_message_and_dismiss(messages.ERROR))
+        topology_page.topology.wait_for_svg_loads()
+
+        topology_page.topology.delete(instance)
+        topology_page.find_message_and_dismiss(messages.SUCCESS)
+        self.assertFalse(
+            topology_page.find_message_and_dismiss(messages.ERROR))
+        topology_page.topology.wait_for_svg_loads()
+
+        topology_page.topology.delete(network)
+        topology_page.find_message_and_dismiss(messages.SUCCESS)
+        self.assertFalse(
+            topology_page.find_message_and_dismiss(messages.ERROR))
+        topology_page.topology.wait_for_svg_loads()

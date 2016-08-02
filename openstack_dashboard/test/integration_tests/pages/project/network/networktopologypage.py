@@ -19,6 +19,8 @@ from openstack_dashboard.test.integration_tests.regions import forms
 from openstack_dashboard.test.integration_tests.pages.project.compute. \
     instancespage import InstanceFormNG
 from openstack_dashboard.test.integration_tests.pages.project.network.\
+    networkspage import NetworksTable
+from openstack_dashboard.test.integration_tests.pages.project.network.\
     routerspage import RoutersTable
 from openstack_dashboard.test.integration_tests import basewebobject
 
@@ -35,14 +37,15 @@ class NetworktopologyPage(basepage.BaseNavigationPage):
     _create_network = (By.CSS_SELECTOR, 'a[id="networks__action_create"]')
     _create_router = (By.CSS_SELECTOR, 'a[id="Routers__action_create"]')
 
-    # some vars from instances page
+    SUBNET_TAB_INDEX = 1
+    SUBNET_DETAILS_TAB_INDEX = 2
+
     DEFAULT_COUNT = 1
     DEFAULT_FLAVOR = 'm1.tiny'
     DEFAULT_BOOT_SOURCE_NG = 'image'
     DEFAULT_VOLUME_CREATION_NG = 'No'
     DEFAULT_BOOT_SOURCE_NAME_NG = 'TestVM'
     DEFAULT_NETWORK_NG = "admin_internal_net"
-
     DEFAULT_EXT_NETWORK = "admin_floating_net"
 
     @property
@@ -80,6 +83,13 @@ class NetworktopologyPage(basepage.BaseNavigationPage):
             self.conf,
             field_mappings=RoutersTable.CREATE_ROUTER_FORM_FIELDS)
 
+    def create_network_action(self):
+        self._get_element(*self._create_network).click()
+        return forms.TabbedFormRegion(
+            self.driver,
+            self.conf,
+            field_mappings=NetworksTable.CREATE_FORM_FIELDS)
+
     def create_instance(self, instance_name,
                         availability_zone=None,
                         instance_count=DEFAULT_COUNT,
@@ -107,6 +117,20 @@ class NetworktopologyPage(basepage.BaseNavigationPage):
         instance_form.switch_to(3)
         instance_form.networks.allocate_item(name=network)
         instance_form.submit()
+
+    def create_network(self, network_name, subnet_name,
+                       disable_gateway=True, network_address=None):
+        create_network_form = self.create_network_action()
+        create_network_form.net_name.text = network_name
+        create_network_form.switch_to(self.SUBNET_TAB_INDEX)
+        create_network_form.subnet_name.text = subnet_name
+        if network_address is None:
+            network_address = self.conf.network.network_cidr
+        create_network_form.cidr.text = network_address
+        if disable_gateway:
+            create_network_form.no_gateway.mark()
+        create_network_form.switch_to(self.SUBNET_DETAILS_TAB_INDEX)
+        create_network_form.submit()
 
     def create_router(self, name, admin_state_up='True',
                       external_network=DEFAULT_EXT_NETWORK):
@@ -252,6 +276,33 @@ class TopologyCanvas(basepage.BasePage):
             return int(vm_count)
         return None
 
+    def add_interface_to_router(self, router, subnet):
+        interface_form = self._open_balloon(router).add_interface()
+        interface_form.add_interface(subnet)
+
+
+class InterfaceForm(forms.BaseFormRegion):
+    _subnet_selector = (By.CSS_SELECTOR, 'select[name="subnet_id"]')
+    _ip_address = (By.CSS_SELECTOR, 'input[name="ip_address"]')
+
+    @property
+    def subnet_selector(self):
+        src_elem = self._get_element(*self._subnet_selector)
+        return forms.SelectFormFieldRegion(self.driver, self.conf, src_elem)
+
+    @property
+    def ip_address(self):
+        src_elem = self._get_element(*self._ip_address)
+        return forms.BaseTextFormFieldRegion(self.driver, self.conf, src_elem)
+
+    def add_interface(self, subnet, address=None):
+        subnets = self.subnet_selector.options.values()
+        subnet = [x for x in subnets if subnet in x][0]
+        self.subnet_selector.text = subnet
+        if address is not None:
+            self.ip_address.text = address
+        self.submit()
+
 
 class TopologyBalloon(basewebobject.BaseWebObject):
     _balloon_locator = (By.CSS_SELECTOR, 'div.topologyBalloon')
@@ -260,6 +311,7 @@ class TopologyBalloon(basewebobject.BaseWebObject):
     _delete_locator = (By.CSS_SELECTOR,
                        "button[class^='delete-device btn btn-danger']")
     _status_locator = (By.CSS_SELECTOR, 'span')
+    _add_interface_locator = (By.CSS_SELECTOR, '.add-interface')
 
     @property
     def balloon(self):
@@ -273,6 +325,10 @@ class TopologyBalloon(basewebobject.BaseWebObject):
     def footer(self):
         return self._get_element(*self._footer_locator)
 
+    @property
+    def add_interface_btn(self):
+        return self._get_element(*self._add_interface_locator)
+
     def delete(self):
         delete_button = self.footer.find_element(*self._delete_locator)
         delete_button.click()
@@ -281,3 +337,7 @@ class TopologyBalloon(basewebobject.BaseWebObject):
     def get_status_element(self):
         status_element = self.body.find_element(*self._status_locator)
         return status_element
+
+    def add_interface(self):
+        self.add_interface_btn.click()
+        return InterfaceForm(self.driver, self.conf)

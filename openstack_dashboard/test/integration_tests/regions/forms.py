@@ -10,8 +10,8 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import collections
 import contextlib
-import re
 import six
 
 from selenium.webdriver.common import by
@@ -199,6 +199,13 @@ class SelectFormFieldRegion(BaseFormFieldRegion):
         results = []
         for option in self.element.all_selected_options:
             results.append(option.get_attribute('value'))
+        return results
+
+    @property
+    def options(self):
+        results = collections.OrderedDict()
+        for option in self.element.options:
+            results[option.get_attribute('value')] = option.text
         return results
 
     @property
