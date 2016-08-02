@@ -23,6 +23,7 @@ from selenium.webdriver.support import wait
 class BaseWebObject(unittest.TestCase):
     """Base class for all web objects."""
     _spinner_locator = (by.By.CLASS_NAME, 'spinner')
+    _balloon_locator = (by.By.CSS_SELECTOR, 'div.topologyBalloon')
 
     def __init__(self, driver, conf):
         self.driver = driver
@@ -157,6 +158,10 @@ class BaseWebObject(unittest.TestCase):
 
     def wait_till_spinner_disappears(self):
         getter = lambda: self.driver.find_element(*self._spinner_locator)
+        self.wait_till_element_disappears(getter)
+
+    def wait_till_balloon_disappears(self):
+        getter = lambda: self.driver.find_element(*self._balloon_locator)
         self.wait_till_element_disappears(getter)
 
     @contextmanager
