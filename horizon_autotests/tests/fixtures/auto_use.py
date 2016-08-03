@@ -62,9 +62,10 @@ LOGGER = logging.getLogger(__name__)
 @pytest.fixture
 def report_dir(request):
     """Create report directory to put test logs."""
-    _report_dir = os.path.join(TEST_REPORTS_DIR, slugify(request.node.name))
+    _report_dir = os.path.join(TEST_REPORTS_DIR,
+                               slugify(request._pyfuncitem.name))
     if not os.path.isdir(_report_dir):
-        os.makedirs(_report_dir)
+        os.mkdir(_report_dir)
     return _report_dir
 
 
@@ -146,21 +147,27 @@ def logger(report_dir, test_env):
 @pytest.yield_fixture(autouse=True)
 def video_capture(report_dir, logger):
     """Capture video of test."""
-    recorder = VideoRecorder(report_dir)
+    recorder = VideoRecorder(os.path.join(report_dir, 'video.mp4'))
     recorder.start()
     yield recorder
     recorder.stop()
 
 
 @pytest.yield_fixture(scope='session')
-def test_env(virtual_display):
+def test_env(request, virtual_display):
     """Fixture to prepare test environment."""
-    _build_test_env()
+    test_name = slugify(request._pyfuncitem.name)
+    _build_test_env(test_name)
     yield
-    _destroy_test_env()
+    _destroy_test_env(test_name)
 
 
-def _build_test_env():
+def _build_test_env(test_name):
+    file_path = os.path.join(TEST_REPORTS_DIR,
+                             'build_env_{}.mp4'.format(test_name))
+    recorder = VideoRecorder(file_path)
+    recorder.start()
+
     app = Horizon(DASHBOARD_URL)
     try:
         auth_steps = AuthSteps(app)
@@ -185,6 +192,7 @@ def _build_test_env():
         auth_steps.logout()
     finally:
         app.quit()
+        recorder.stop()
 
 
 @contextlib.contextmanager
@@ -195,7 +203,12 @@ def _try_delete(resource_name):
         LOGGER.error("Can't delete resource {!r}".format(resource_name))
 
 
-def _destroy_test_env():
+def _destroy_test_env(test_name):
+    file_path = os.path.join(TEST_REPORTS_DIR,
+                             'destroy_env_{}.mp4'.format(test_name))
+    recorder = VideoRecorder(file_path)
+    recorder.start()
+
     app = Horizon(DASHBOARD_URL)
     try:
         auth_steps = AuthSteps(app)
@@ -221,3 +234,4 @@ def _destroy_test_env():
         auth_steps.logout()
     finally:
         app.quit()
+        recorder.stop()

@@ -33,6 +33,7 @@ def pytest_configure(config):
         # on xdist-master node do all the important stuff
         if os.path.exists(TEST_REPORTS_DIR):
             shutil.rmtree(TEST_REPORTS_DIR)
+        os.mkdir(TEST_REPORTS_DIR)
         if os.path.exists(XVFB_LOCK):
             os.remove(XVFB_LOCK)
 
