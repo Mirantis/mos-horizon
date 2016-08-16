@@ -20,8 +20,8 @@ Image tests.
 import pytest
 from waiting import wait
 
-from .fixtures._config import INTERNAL_NETWORK_NAME
-from .fixtures._utils import generate_ids, generate_files, get_size
+from horizon_autotests.config import INTERNAL_NETWORK_NAME
+from horizon_autotests.utils import generate_ids, generate_files, get_size
 
 
 @pytest.mark.usefixtures('any_one')

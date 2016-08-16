@@ -31,22 +31,22 @@ from horizon_autotests.steps import (AuthSteps,
                                      UsersSteps)
 from horizon_autotests.third_party import VideoRecorder, Lock
 
-from ._config import (ADMIN_NAME,
-                      ADMIN_PASSWD,
-                      ADMIN_PROJECT,
-                      DASHBOARD_URL,
-                      DEFAULT_ADMIN_NAME,
-                      DEFAULT_ADMIN_PASSWD,
-                      DEFAULT_ADMIN_PROJECT,
-                      FLOATING_NETWORK_NAME,
-                      INTERNAL_NETWORK_NAME,
-                      TEST_REPORTS_DIR,
-                      USER_NAME,
-                      USER_PASSWD,
-                      USER_PROJECT,
-                      VIRTUAL_DISPLAY,
-                      XVFB_LOCK)
-from ._utils import slugify
+from horizon_autotests.config import (ADMIN_NAME,
+                                      ADMIN_PASSWD,
+                                      ADMIN_PROJECT,
+                                      DASHBOARD_URL,
+                                      DEFAULT_ADMIN_NAME,
+                                      DEFAULT_ADMIN_PASSWD,
+                                      DEFAULT_ADMIN_PROJECT,
+                                      FLOATING_NETWORK_NAME,
+                                      INTERNAL_NETWORK_NAME,
+                                      TEST_REPORTS_DIR,
+                                      USER_NAME,
+                                      USER_PASSWD,
+                                      USER_PROJECT,
+                                      VIRTUAL_DISPLAY,
+                                      XVFB_LOCK)
+from horizon_autotests.utils import slugify
 
 __all__ = [
     'logger',

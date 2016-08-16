@@ -21,8 +21,8 @@ import os
 
 import pytest
 
-from ._config import (ADMIN_NAME, ADMIN_PASSWD, ADMIN_PROJECT,
-                      USER_NAME, USER_PASSWD, USER_PROJECT)
+from horizon_autotests.config import (ADMIN_NAME, ADMIN_PASSWD, ADMIN_PROJECT,
+                                      USER_NAME, USER_PASSWD, USER_PROJECT)
 
 __all__ = [
     'admin_only',

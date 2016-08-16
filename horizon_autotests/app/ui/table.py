@@ -24,7 +24,7 @@ from pom import ui
 from selenium.webdriver.common.by import By
 from waiting import wait
 
-from horizon_autotests import EVENT_TIMEOUT
+from horizon_autotests.config import EVENT_TIMEOUT
 
 
 class Cell(ui.Block):

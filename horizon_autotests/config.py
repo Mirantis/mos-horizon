@@ -19,7 +19,11 @@ Tests config.
 
 import os
 
-from ._utils import generate_ids
+from .utils import generate_ids
+
+UI_TIMEOUT = 30
+ACTION_TIMEOUT = 60
+EVENT_TIMEOUT = 180
 
 DASHBOARD_URL = os.environ['DASHBOARD_URL']
 VIRTUAL_DISPLAY = os.environ.get('VIRTUAL_DISPLAY')
@@ -33,5 +37,5 @@ FLOATING_NETWORK_NAME = 'admin_floating_net'
 INTERNAL_NETWORK_NAME = 'admin_internal_net'
 
 TEST_REPORTS_DIR = os.path.abspath(
-    os.path.join(os.path.dirname(__file__), '..', 'test_reports'))
+    os.path.join(os.path.dirname(__file__), 'test_reports'))
 XVFB_LOCK = '/tmp/xvfb.lock'

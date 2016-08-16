@@ -20,8 +20,7 @@ Fixtures for keypairs.
 import pytest
 
 from horizon_autotests.steps import KeypairsSteps
-
-from ._utils import generate_ids, AttrDict
+from horizon_autotests.utils import generate_ids, AttrDict
 
 __all__ = [
     'import_keypair',

@@ -19,7 +19,7 @@ Images steps.
 
 import pom
 
-from horizon_autotests import EVENT_TIMEOUT
+from horizon_autotests.config import EVENT_TIMEOUT
 
 from .base import BaseSteps
 

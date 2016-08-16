@@ -24,7 +24,7 @@ from pom import ui
 from selenium.webdriver import FirefoxProfile
 from selenium.webdriver.remote.remote_connection import RemoteConnection
 
-from horizon_autotests import ACTION_TIMEOUT, UI_TIMEOUT
+from horizon_autotests.config import ACTION_TIMEOUT, UI_TIMEOUT
 
 from .pages import PageBase, pages
 

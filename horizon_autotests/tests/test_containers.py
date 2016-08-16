@@ -20,7 +20,7 @@ Container tests.
 import pytest
 import requests
 
-from .fixtures._utils import generate_ids, generate_files
+from horizon_autotests.utils import generate_ids, generate_files
 
 
 @pytest.mark.usefixtures('any_one')

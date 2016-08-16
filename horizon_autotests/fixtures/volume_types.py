@@ -21,7 +21,7 @@ import pytest
 
 from horizon_autotests.steps import VolumeTypesSteps
 
-from ._utils import AttrDict, generate_ids
+from horizon_autotests.utils import AttrDict, generate_ids
 
 __all__ = [
     'qos_spec',

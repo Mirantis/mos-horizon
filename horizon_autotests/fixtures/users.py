@@ -21,8 +21,8 @@ import pytest
 
 from horizon_autotests.steps import UsersSteps
 
-from ._config import USER_PROJECT
-from ._utils import AttrDict, generate_ids
+from horizon_autotests.config import USER_PROJECT
+from horizon_autotests.utils import AttrDict, generate_ids
 
 __all__ = [
     'create_user',

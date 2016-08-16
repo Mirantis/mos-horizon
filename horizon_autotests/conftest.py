@@ -22,9 +22,9 @@ import shutil
 
 import pytest
 
+from .config import TEST_REPORTS_DIR, XVFB_LOCK
 from .fixtures import *  # noqa
-from .fixtures._config import TEST_REPORTS_DIR, XVFB_LOCK
-from .fixtures._utils import slugify
+from .utils import slugify
 
 
 def pytest_configure(config):

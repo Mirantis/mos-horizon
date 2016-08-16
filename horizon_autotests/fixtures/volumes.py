@@ -20,10 +20,10 @@ Fixtures for volumes.
 import pytest
 from waiting import wait
 
-from horizon_autotests import EVENT_TIMEOUT
+from horizon_autotests.config import EVENT_TIMEOUT
 from horizon_autotests.steps import VolumesSteps
 
-from ._utils import AttrDict, generate_ids
+from horizon_autotests.utils import AttrDict, generate_ids
 
 __all__ = [
     'create_backups',

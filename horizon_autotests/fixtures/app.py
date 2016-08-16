@@ -24,7 +24,7 @@ import pytest
 from horizon_autotests.app import Horizon
 from horizon_autotests.steps import AuthSteps
 
-from ._config import DASHBOARD_URL
+from horizon_autotests.config import DASHBOARD_URL
 
 __all__ = [
     'auth_steps',
