@@ -183,11 +183,11 @@ def _build_test_env(test_name):
                                 role='admin')
         users_steps.create_user(USER_NAME, USER_PASSWD, USER_PROJECT)
 
-        networks_steps = NetworksSteps(app)
-        networks_steps.admin_update_network(INTERNAL_NETWORK_NAME,
-                                            shared=True, check=False)
-        networks_steps.admin_update_network(FLOATING_NETWORK_NAME,
-                                            shared=True, check=False)
+        # networks_steps = NetworksSteps(app)
+        # networks_steps.admin_update_network(INTERNAL_NETWORK_NAME,
+        #                                     shared=True, check=False)
+        # networks_steps.admin_update_network(FLOATING_NETWORK_NAME,
+        #                                     shared=True, check=False)
 
         auth_steps.logout()
     finally:

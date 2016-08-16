@@ -24,7 +24,9 @@ from ._utils import generate_ids
 DASHBOARD_URL = os.environ['DASHBOARD_URL']
 VIRTUAL_DISPLAY = os.environ.get('VIRTUAL_DISPLAY')
 
-DEFAULT_ADMIN_NAME, DEFAULT_ADMIN_PASSWD, DEFAULT_ADMIN_PROJECT = ['admin'] * 3
+DEFAULT_ADMIN_NAME = 'admin'
+DEFAULT_ADMIN_PASSWD = 'password'
+DEFAULT_ADMIN_PROJECT = 'admin'
 ADMIN_NAME, ADMIN_PASSWD, ADMIN_PROJECT = list(generate_ids('admin', count=3))
 USER_NAME, USER_PASSWD, USER_PROJECT = list(generate_ids('user', count=3))
 FLOATING_NETWORK_NAME = 'admin_floating_net'

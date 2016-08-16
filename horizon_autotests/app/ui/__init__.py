@@ -18,6 +18,7 @@ Module with custom ui components.
 # limitations under the License.
 
 from .checkbox import CheckBox  # noqa
+from .combobox import ComboBox  # noqa
 from .dropdown_menu import DropdownMenu  # noqa
 from .form import Form  # noqa
 from .initiated_ui import InitiatedUI  # noqa

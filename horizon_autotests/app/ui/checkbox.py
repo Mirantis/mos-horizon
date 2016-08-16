@@ -26,6 +26,7 @@ class CheckBox(pom.ui.CheckBox):
     """Themable checkbox."""
 
     @property
+    @pom.ui.wait_for_presence
     def is_selected(self):
         """Define is checkbox selected."""
         return self._webelement.is_selected()

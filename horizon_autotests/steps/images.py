@@ -68,7 +68,7 @@ class ImagesSteps(BaseSteps):
             form.submit()
 
         if check:
-            self.close_notification('success')
+            self.close_notification('info')
             page_images.table_images.row(
                 name=image_name).wait_for_status('Active')
 
