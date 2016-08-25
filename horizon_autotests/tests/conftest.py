@@ -57,6 +57,11 @@ def pytest_runtest_makereport(item, call):
 
 def pytest_collection_modifyitems(config, items):
     """Hook to detect forbidden calls inside test."""
+    for item in items[:]:
+        reject_if = item.get_marker('reject_if')
+        if reject_if and reject_if.args[0]:
+            items.remove(item)
+
     if os.path.isfile(SKIPS_FILE):
         with open(SKIPS_FILE) as f:
             skips = json.load(f)

@@ -17,6 +17,8 @@ Tests for volume backups.
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import os
+
 import pytest
 
 from .fixtures._utils import generate_ids
@@ -26,6 +28,8 @@ from .fixtures._utils import generate_ids
 class TestAnyOne(object):
     """Tests for any user."""
 
+    @pytest.mark.reject_if('ceph' not in os.environ.get('JOB_NAME', 'ceph'),
+                           reason="Swift backups are not supported")
     def test_volume_backups_pagination(self, create_backups, update_settings,
                                        volumes_steps):
         """Verify that volume backups pagination works right and back."""
