@@ -43,9 +43,7 @@ class ApiAccessSteps(BaseSteps):
         tab_api_access.button_download_v2_file.click()
 
         if check:
-            wait(lambda: os.path.basename(self._rc_path) in
-                 os.listdir(self.app.download_dir),
-                 timeout_seconds=30, sleep_seconds=0.1)
+            self._wait_rc_file_downloaded()
             content = open(self._rc_path).read()
 
             assert 'OS_AUTH_URL={}'.format(self._auth_url) in content
@@ -62,12 +60,11 @@ class ApiAccessSteps(BaseSteps):
         tab_api_access.button_download_v3_file.click()
 
         if check:
-            wait(lambda: os.path.basename(self._rc_path) in
-                 os.listdir(self.app.download_dir),
-                 timeout_seconds=30, sleep_seconds=0.1)
+            self._wait_rc_file_downloaded()
             content = open(self._rc_path).read()
 
-            assert 'OS_AUTH_URL={}'.format(self._auth_url) in content
+            _v3_url = self._auth_url.split('/v')[0] + '/v3'  # FIXME(schipiga)
+            assert 'OS_AUTH_URL={}'.format(_v3_url) in content
             assert 'OS_USERNAME="{}"'.format(self._username) in content
             assert 'OS_PROJECT_NAME="{}"'.format(self._project_name) in content
             assert 'OS_PROJECT_ID={}'.format(self._project_id) in content
@@ -112,3 +109,20 @@ class ApiAccessSteps(BaseSteps):
     @property
     def _auth_url(self):
         return self.app.page_access.tab_api_access.label_identity.value
+
+    def _wait_rc_file_downloaded(self):
+
+        def predicate():
+            try:
+                if (os.path.basename(self._rc_path) in
+                        os.listdir(self.app.download_dir)):
+
+                    with open(self._rc_path) as f:
+                        return bool(f.read(1))
+                else:
+                    return False
+            except IOError:
+                return False
+
+        wait(predicate,
+             timeout_seconds=30, sleep_seconds=0.1)
