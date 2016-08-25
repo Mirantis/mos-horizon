@@ -17,13 +17,14 @@ Fixtures aggregator.
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import json
 import os
 import shutil
 
 import pytest
 
 from .fixtures import *  # noqa
-from .fixtures._config import TEST_REPORTS_DIR, XVFB_LOCK
+from .fixtures._config import TEST_REPORTS_DIR, XVFB_LOCK, SKIPS_FILE
 from .fixtures._utils import slugify
 
 
@@ -52,3 +53,14 @@ def pytest_runtest_makereport(item, call):
 
     if rep.when == 'teardown' and item.is_passed:
         shutil.rmtree(os.path.join(TEST_REPORTS_DIR, slugify(item.name)))
+
+
+def pytest_collection_modifyitems(config, items):
+    """Hook to detect forbidden calls inside test."""
+    if os.path.isfile(SKIPS_FILE):
+        with open(SKIPS_FILE) as f:
+            skips = json.load(f)
+            for item in items:
+                skip_reason = skips.get(item.name)
+                if skip_reason:
+                    item.add_marker(pytest.mark.skip(reason=skip_reason))

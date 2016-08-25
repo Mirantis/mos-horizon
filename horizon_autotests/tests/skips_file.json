@@ -1,0 +1,7 @@
+{
+    "test_instances_pagination[admin]": "Reversed instances pagination is not working",
+    "test_instances_pagination[user]": "Reversed instances pagination is not working",
+    "test_migrate_volume": "Need several host nodes to migrate volume between them",
+    "test_volume_backups_pagination[admin]": "Cinder backups are not supported in MOS",
+    "test_volume_backups_pagination[user]": "Cinder backups are not supported in MOS"
+}

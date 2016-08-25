@@ -30,6 +30,9 @@ USER_NAME, USER_PASSWD, USER_PROJECT = list(generate_ids('user', count=3))
 FLOATING_NETWORK_NAME = 'admin_floating_net'
 INTERNAL_NETWORK_NAME = 'admin_internal_net'
 
+SKIPS_FILE = os.environ.get('SKIPS_FILE', os.path.abspath(
+    os.path.join(os.path.dirname(__file__), '..', 'skips_file.json')))
+
 TEST_REPORTS_DIR = os.path.abspath(
     os.path.join(os.path.dirname(__file__), '..', 'test_reports'))
 XVFB_LOCK = '/tmp/xvfb.lock'
