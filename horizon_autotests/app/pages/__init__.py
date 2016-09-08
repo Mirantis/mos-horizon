@@ -28,6 +28,7 @@ from .instances import PageInstance, PageInstances
 from .login import PageLogin
 from .metadata_definitions import PageMetadataDefinitions
 from .networks import (PageAdminNetworks,
+                       PageAdminNetwork,
                        PageNetwork,
                        PageNetworks)
 from .projects import PageProjects
@@ -42,6 +43,7 @@ from .volumes import (PageAdminVolumes,
 pages = [
     PageAccess,
     PageAdminNetworks,
+    PageAdminNetwork,
     PageAdminVolumes,
     PageBase,
     PageContainers,

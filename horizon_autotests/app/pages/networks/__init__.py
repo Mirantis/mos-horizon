@@ -17,6 +17,7 @@ Network pages and their components.
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from .page_admin_network import PageAdminNetwork  # noqa
 from .page_admin_networks import PageAdminNetworks  # noqa
 from .page_network import PageNetwork  # noqa
 from .page_networks import PageNetworks  # noqa

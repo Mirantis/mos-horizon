@@ -48,6 +48,16 @@ class TestAdminOnly(object):
             name=network_name).wait_for_presence()
         networks_steps.admin_delete_network(network_name)
 
+    def test_create_delete_subnet(self, networks_steps, network):
+        """Checks create delete subnet functionality"""
+        subnet_name = next(generate_ids('subnet'))
+        networks_steps.admin_add_subnet(network.name, subnet_name)
+
+        networks_steps.admin_add_subnet(network.name, subnet_name, check=False)
+        networks_steps.close_notification('error')
+
+        networks_steps.admin_delete_subnet(network.name, subnet_name)
+
 
 @pytest.mark.usefixtures('user_only')
 class TestUserOnly(object):

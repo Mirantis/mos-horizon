@@ -188,3 +188,48 @@ class NetworksSteps(BaseSteps):
                 return True
 
             wait(check_rows, timeout_seconds=10, sleep_seconds=0.1)
+
+    @pom.timeit('Step')
+    def admin_view_network(self, network_name, check=True):
+        """Step to view network as admin"""
+        self.page_admin_networks().table_networks.row(
+            name=network_name).link_network.click()
+
+        if check:
+            assert self.app.page_admin_network.info_network.label_name.value \
+                == network_name
+
+    @pom.timeit('Step')
+    def admin_add_subnet(self, network_name, subnet_name,
+                         network_address='10.109.3.0/24', check=True):
+        """Step to create subnet from admin network overview page"""
+        self.admin_view_network(network_name)
+        page_network = self.app.page_admin_network
+        page_network.button_create_subnet.click()
+
+        with page_network.form_create_subnet as form:
+            form.field_subnet_name.value = subnet_name
+            form.field_network_address.value = network_address
+
+            form.button_next.click()
+
+            form.submit()
+
+        if check:
+            self.close_notification('success')
+            page_network.table_subnets.row(
+                name=subnet_name).wait_for_presence()
+
+    @pom.timeit('Step')
+    def admin_delete_subnet(self, network_name, subnet_name, check=True):
+        """Step to delete subnet from admin network overview page"""
+        self.admin_view_network(network_name)
+        page_network = self.app.page_admin_network
+
+        page_network.table_subnets.row(name=subnet_name).checkbox.select()
+        page_network.button_delete_subnet.click()
+        page_network.form_confirm.submit()
+
+        if check:
+            self.close_notification('success')
+            page_network.table_subnets.row(name=subnet_name).wait_for_absence()
