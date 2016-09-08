@@ -58,6 +58,17 @@ class TestAdminOnly(object):
 
         networks_steps.admin_delete_subnet(network.name, subnet_name)
 
+    def test_create_edit_delete_port(self, networks_steps, network):
+        """Checks create/edit/delete port functionality"""
+        port_name = next(generate_ids('port'))
+        networks_steps.admin_add_port(network.name, port_name)
+
+        new_port_name = next(generate_ids('new_port'))
+        networks_steps.admin_update_port(network.name, port_name,
+                                         new_port_name=new_port_name)
+
+        networks_steps.admin_delete_port(network.name, new_port_name)
+
 
 @pytest.mark.usefixtures('user_only')
 class TestUserOnly(object):
