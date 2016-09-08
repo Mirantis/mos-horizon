@@ -244,6 +244,9 @@ class VolumesSteps(BaseSteps):
 
             form.submit()
 
+        if check:
+            tab_volumes.modal.wait_for_absence()
+
     @pom.timeit('Step')
     def attach_instance(self, volume_name, instance_name, check=True):
         """Step to attach instance."""

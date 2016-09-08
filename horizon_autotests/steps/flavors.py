@@ -121,6 +121,7 @@ class FlavorsSteps(BaseSteps):
             form.submit()
 
         if check:
+            page_flavors.modal.wait_for_absence()
             page_flavors.table_flavors.row(
                 name=flavor_name).wait_for_presence()
 

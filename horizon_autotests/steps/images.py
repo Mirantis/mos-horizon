@@ -126,6 +126,7 @@ class ImagesSteps(BaseSteps):
             form.submit()
 
         if check:
+            page_images.modal.wait_for_absence()
             page_images.table_images.row(
                 name=image_name, status='Active').wait_for_presence()
 
@@ -232,3 +233,6 @@ class ImagesSteps(BaseSteps):
                     name=network_name).button_add.click()
 
             form.submit()
+
+        if check:
+            page_images.modal.wait_for_absence()
