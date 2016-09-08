@@ -18,9 +18,7 @@ Fixtures for volumes.
 # limitations under the License.
 
 import pytest
-from waiting import wait
 
-from horizon_autotests import EVENT_TIMEOUT
 from horizon_autotests.steps import VolumesSteps
 
 from ._utils import AttrDict, generate_ids
