@@ -7,4 +7,4 @@ attrdict
 requests
 waiting
 xvfbwrapper
--egit+https://github.com/sergeychipiga/pom.git@master#egg=pom
+python-pom

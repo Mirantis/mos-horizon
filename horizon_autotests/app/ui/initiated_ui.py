@@ -54,7 +54,7 @@ class Spinner(ui.UI):
 
 
 class Modal(ui.Block):
-    """Spinner to wait loading."""
+    """Modal background."""
 
     timeout = ACTION_TIMEOUT
 

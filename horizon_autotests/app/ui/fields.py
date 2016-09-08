@@ -23,12 +23,12 @@ from selenium.webdriver.common.by import By
 
 
 class TextField(ui.TextField):
+    """Custom text field."""
 
     @property
     @ui.wait_for_presence
     def help_message(self):
-        """Get field help message"""
+        """Get help message of field."""
         return self.webelement.find_element(
-            By.XPATH,
-            'ancestor::*//*[contains(@class, "help-block")]'
-        ).get_attribute('innerText')
+            By.XPATH, 'ancestor::*//*[contains(@class, "help-block")]'
+        ).get_attribute('innerHTML')

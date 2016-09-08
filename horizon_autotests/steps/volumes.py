@@ -384,7 +384,7 @@ class VolumesSteps(BaseSteps):
 
     @pom.timeit('Step')
     def create_snapshot(self, volume_name, snapshot_name, description=None,
-                        check=True, modal_absent=True):
+                        check=True):
         """Step to create volume snapshot."""
         tab_volumes = self.tab_volumes()
 
@@ -397,7 +397,7 @@ class VolumesSteps(BaseSteps):
             form.field_name.value = snapshot_name
             if description is not None:
                 self.field_description.value = description
-            form.submit(modal_absent=modal_absent)
+            form.submit()
 
         if check:
             self.close_notification('info')
@@ -481,7 +481,7 @@ class VolumesSteps(BaseSteps):
 
     @pom.timeit('Step')
     def create_backup(self, volume_name, backup_name, description=None,
-                      container=None, check=True, modal_absent=True):
+                      container=None, check=True):
         """Step to create volume backup."""
         tab_volumes = self.tab_volumes()
 
@@ -499,7 +499,7 @@ class VolumesSteps(BaseSteps):
             if container is not None:
                 self.field_container.value = container
 
-            form.submit(modal_absent=modal_absent)
+            form.submit()
 
         if check:
             self.close_notification('success')
