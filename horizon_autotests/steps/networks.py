@@ -227,9 +227,59 @@ class NetworksSteps(BaseSteps):
         page_network = self.app.page_admin_network
 
         page_network.table_subnets.row(name=subnet_name).checkbox.select()
+
         page_network.button_delete_subnet.click()
         page_network.form_confirm.submit()
 
         if check:
             self.close_notification('success')
             page_network.table_subnets.row(name=subnet_name).wait_for_absence()
+
+    @pom.timeit('Step')
+    def admin_add_port(self, network_name, port_name, check=True):
+        """Step to create port from admin network overview page"""
+        self.admin_view_network(network_name)
+        page_network = self.app.page_admin_network
+        page_network.button_create_port.click()
+
+        with page_network.form_create_port as form:
+            form.field_name.value = port_name
+            form.submit()
+
+        if check:
+            self.close_notification('success')
+            page_network.table_ports.row(
+                name=port_name).wait_for_presence()
+
+    @pom.timeit('Step')
+    def admin_update_port(self, network_name, port_name, new_port_name,
+                          check=True):
+        """Step to update port from admin network overview page"""
+        self.admin_view_network(network_name)
+        page_network = self.app.page_admin_network
+
+        page_network.table_ports.row(
+            name=port_name).dropdown_menu.item_default.click()
+
+        with page_network.form_update_port as form:
+            form.field_name.value = new_port_name
+            form.submit()
+
+        if check:
+            self.close_notification('success')
+            page_network.table_ports.row(
+                name=new_port_name).wait_for_presence()
+
+    @pom.timeit('Step')
+    def admin_delete_port(self, network_name, port_name, check=True):
+        """Step to delete port from admin network overview page"""
+        self.admin_view_network(network_name)
+        page_network = self.app.page_admin_network
+
+        page_network.table_ports.row(name=port_name).checkbox.select()
+        page_network.button_delete_port.click()
+        page_network.form_confirm.submit()
+
+        if check:
+            self.close_notification('success')
+            page_network.table_ports.row(name=port_name).wait_for_absence()

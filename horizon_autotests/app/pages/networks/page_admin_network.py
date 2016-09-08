@@ -26,8 +26,21 @@ from ..base import PageBase
 
 
 @ui.register_ui(
+    item_update_port=ui.UI(By.CSS_SELECTOR, '[id$="action_update"]'))
+class PortDropdownMenu(_ui.DropdownMenu):
+    """Dropdown menu for network row."""
+
+
+@ui.register_ui(
     checkbox=_ui.CheckBox(By.CSS_SELECTOR, 'input[type="checkbox"]'))
 class RowSubnet(_ui.Row):
+    """Row with network in networks table."""
+
+
+@ui.register_ui(
+    checkbox=_ui.CheckBox(By.CSS_SELECTOR, 'input[type="checkbox"]'),
+    dropdown_menu=PortDropdownMenu())
+class RowPort(_ui.Row):
     """Row with network in networks table."""
 
 
@@ -36,6 +49,13 @@ class TableSubnets(_ui.Table):
 
     columns = {'name': 2, 'network_address': 3}
     row_cls = RowSubnet
+
+
+class TablePorts(_ui.Table):
+    """Table of ports"""
+
+    columns = {'name': 2}
+    row_cls = RowPort
 
 
 @ui.register_ui(label_name=ui.UI(By.CSS_SELECTOR, 'dd:nth-of-type(1)'))
@@ -56,14 +76,24 @@ class FormCreateSubnet(_ui.Form):
     cancel_locator = By.CSS_SELECTOR, '.btn.btn-default.cancel'
 
 
+@ui.register_ui(field_name=ui.TextField(By.NAME, 'name'))
+class FormCreatePort(_ui.Form):
+    """Form to create port"""
+
+
 @ui.register_ui(
     table_subnets=TableSubnets(By.ID, 'subnets'),
+    table_ports=TablePorts(By.ID, 'ports'),
     info_network=Info(By.CSS_SELECTOR,
                       'div.detail dl.dl-horizontal:nth-of-type(1)'),
     button_create_subnet=ui.Button(By.ID, 'subnets__action_create'),
     button_delete_subnet=ui.Button(By.ID, 'subnets__action_delete'),
     form_create_subnet=FormCreateSubnet(
-        By.XPATH, './/form[contains(@action, "subnets/create")]'))
+        By.XPATH, './/form[contains(@action, "subnets/create")]'),
+    button_create_port=ui.Button(By.ID, 'ports__action_create'),
+    button_delete_port=ui.Button(By.ID, 'ports__action_delete'),
+    form_create_port=FormCreatePort(By.ID, 'create_port_form'),
+    form_update_port=FormCreatePort(By.ID, 'update_port_form'))
 class PageAdminNetwork(PageBase):
     """Admin network page"""
 
