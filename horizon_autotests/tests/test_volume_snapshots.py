@@ -78,3 +78,13 @@ class TestAnyOne(object):
         """Verify that user cat create volume from snapshot."""
         volumes_steps.create_volume_from_snapshot(snapshot.name)
         volumes_steps.delete_volume(snapshot.name)
+
+    def test_create_snapshot_without_name(self, volume, volumes_steps):
+        """Create volume backup without name"""
+        volumes_steps.create_snapshot(volume.name, '', check=False,
+                                      modal_absent=False)
+
+        tab_volumes = volumes_steps.app.page_volumes.tab_volumes
+        with tab_volumes.form_create_snapshot as form:
+            assert form.field_name.help_message == u'This field is required.'
+            form.cancel()

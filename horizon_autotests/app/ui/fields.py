@@ -1,7 +1,7 @@
 """
-Module with custom ui components.
+Custom form fields.
 
-@author: schipiga@mirantis.com
+@author: gdyuldin@mirantis.com
 """
 
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,11 +17,18 @@ Module with custom ui components.
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from .checkbox import CheckBox  # noqa
-from .dropdown_menu import DropdownMenu  # noqa
-from .fields import TextField  # noqa
-from .form import Form  # noqa
-from .initiated_ui import InitiatedUI  # noqa
-from .navigate_menu import NavigateMenu  # noqa
-from .tab import Tab  # noqa
-from .table import Cell, Row, Table  # noqa
+
+from pom import ui
+from selenium.webdriver.common.by import By
+
+
+class TextField(ui.TextField):
+
+    @property
+    @ui.wait_for_presence
+    def help_message(self):
+        """Get field help message"""
+        return self.webelement.find_element(
+            By.XPATH,
+            'ancestor::*//*[contains(@class, "help-block")]'
+        ).get_attribute('innerText')

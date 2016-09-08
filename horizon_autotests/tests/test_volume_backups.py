@@ -71,3 +71,15 @@ class TestAnyOne(object):
             name=backup_names[2]).wait_for_presence(30)
         assert tab_backups.table_backups.link_next.is_present
         assert not tab_backups.table_backups.link_prev.is_present
+
+    @pytest.mark.reject_if('ceph' not in os.environ.get('JOB_NAME', 'ceph'),
+                           reason="Swift backups are not supported")
+    def test_create_backup_without_name(self, volume, volumes_steps):
+        """Create volume backup without name"""
+        volumes_steps.create_backup(volume.name, '', check=False,
+                                    modal_absent=False)
+
+        tab_volumes = volumes_steps.app.page_volumes.tab_volumes
+        with tab_volumes.form_create_backup as form:
+            assert form.field_name.help_message == u'This field is required.'
+            form.cancel()

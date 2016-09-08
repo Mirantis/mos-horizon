@@ -99,7 +99,7 @@ class FormExtendVolume(_ui.Form):
 
 @ui.register_ui(
     field_description=ui.TextField(By.NAME, 'description'),
-    field_name=ui.TextField(By.NAME, 'name'))
+    field_name=_ui.TextField(By.NAME, 'name'))
 class FormCreateSnapshot(_ui.Form):
     """Form create volume snapshot."""
 
@@ -139,7 +139,7 @@ class FormAcceptTransfer(_ui.Form):
 @ui.register_ui(
     field_container=ui.TextField(By.NAME, 'container_name'),
     field_description=ui.TextField(By.NAME, 'description'),
-    field_name=ui.TextField(By.NAME, 'name'))
+    field_name=_ui.TextField(By.NAME, 'name'))
 class FormCreateBackup(_ui.Form):
     """Form to create volume backup."""
 
