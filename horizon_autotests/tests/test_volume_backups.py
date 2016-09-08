@@ -24,12 +24,12 @@ import pytest
 from .fixtures._utils import generate_ids
 
 
+@pytest.mark.reject_if('ceph' not in os.environ.get('JOB_NAME', 'ceph'),
+                       reason="Swift backups are not supported")
 @pytest.mark.usefixtures('any_one')
 class TestAnyOne(object):
     """Tests for any user."""
 
-    @pytest.mark.reject_if('ceph' not in os.environ.get('JOB_NAME', 'ceph'),
-                           reason="Swift backups are not supported")
     def test_volume_backups_pagination(self, create_backups, update_settings,
                                        volumes_steps):
         """Verify that volume backups pagination works right and back."""
@@ -72,14 +72,10 @@ class TestAnyOne(object):
         assert tab_backups.table_backups.link_next.is_present
         assert not tab_backups.table_backups.link_prev.is_present
 
-    @pytest.mark.reject_if('ceph' not in os.environ.get('JOB_NAME', 'ceph'),
-                           reason="Swift backups are not supported")
-    def test_create_backup_without_name(self, volume, volumes_steps):
-        """Create volume backup without name"""
-        volumes_steps.create_backup(volume.name, '', check=False,
-                                    modal_absent=False)
+    def test_cannot_create_backup_without_name(self, volume, volumes_steps):
+        """Verify that volume backup without name cannot be created."""
+        volumes_steps.create_backup(volume.name, backup_name='', check=False)
 
-        tab_volumes = volumes_steps.app.page_volumes.tab_volumes
-        with tab_volumes.form_create_backup as form:
-            assert form.field_name.help_message == u'This field is required.'
-            form.cancel()
+        form = volumes_steps.app.page_volumes.tab_volumes.form_create_backup
+        assert form.field_name.help_message == u'This field is required.'
+        form.cancel()

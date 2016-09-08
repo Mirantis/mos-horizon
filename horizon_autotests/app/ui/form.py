@@ -34,33 +34,40 @@ class Form(ui.Form):
 
     @pom.timeit
     @ui.wait_for_presence
-    def submit(self, modal_absent=True):
+    def submit(self):
         """Submit form."""
         submit_button = ui.Button(*self.submit_locator)
         submit_button.container = self
         submit_button.click()
-
-        if modal_absent:
-            self._modal.wait_for_absence()
+        self._spinner.wait_for_absence()
 
     @pom.timeit
     @ui.wait_for_presence
-    def cancel(self, modal_absent=True):
+    def cancel(self):
         """Cancel form."""
         cancel_button = ui.Button(*self.cancel_locator)
         cancel_button.container = self
         cancel_button.click()
+        self._modal.wait_for_absence()
 
-        if modal_absent:
-            self._modal.wait_for_absence()
+    @property
+    @pom.cache
+    def _spinner(self):
+        container = self.container
+        while True:
+            spinner = getattr(container, 'spinner', None)
+            if spinner:
+                return spinner
+            else:
+                container = container.container
 
     @property
     @pom.cache
     def _modal(self):
         container = self.container
         while True:
-            ui = getattr(container, 'modal', None)
-            if ui:
-                return ui
+            modal = getattr(container, 'modal', None)
+            if modal:
+                return modal
             else:
                 container = container.container

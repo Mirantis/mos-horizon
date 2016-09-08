@@ -34,7 +34,8 @@ class FormLogin(_ui.Form):
     form_login=FormLogin(By.CSS_SELECTOR, 'form'),
     label_alert_message=ui.UI(By.CSS_SELECTOR, 'div.alert-message'),
     label_error_message=ui.UI(By.CSS_SELECTOR, 'div.error'),
-    modal=_ui.initiated_ui.Modal(By.CLASS_NAME, 'modal-backdrop'))
+    modal=_ui.initiated_ui.Modal(By.CLASS_NAME, 'modal-backdrop'),
+    spinner=_ui.initiated_ui.Spinner(By.CLASS_NAME, 'spinner'))
 class PageLogin(pom.Page):
     """Page to login user."""
 

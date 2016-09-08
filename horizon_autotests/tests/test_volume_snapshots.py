@@ -75,16 +75,15 @@ class TestAnyOne(object):
         assert not tab_snapshots.table_snapshots.link_prev.is_present
 
     def test_create_volume_from_snapshot(self, snapshot, volumes_steps):
-        """Verify that user cat create volume from snapshot."""
+        """Verify that user can create volume from snapshot."""
         volumes_steps.create_volume_from_snapshot(snapshot.name)
         volumes_steps.delete_volume(snapshot.name)
 
-    def test_create_snapshot_without_name(self, volume, volumes_steps):
-        """Create volume backup without name"""
-        volumes_steps.create_snapshot(volume.name, '', check=False,
-                                      modal_absent=False)
+    def test_cannot_create_snapshot_without_name(self, volume, volumes_steps):
+        """Verify that volume snapshot without name cannot be created."""
+        volumes_steps.create_snapshot(volume.name, snapshot_name='',
+                                      check=False)
 
-        tab_volumes = volumes_steps.app.page_volumes.tab_volumes
-        with tab_volumes.form_create_snapshot as form:
-            assert form.field_name.help_message == u'This field is required.'
-            form.cancel()
+        form = volumes_steps.app.page_volumes.tab_volumes.form_create_snapshot
+        assert form.field_name.help_message == u'This field is required.'
+        form.cancel()
