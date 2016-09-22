@@ -22,10 +22,10 @@ import os
 import shutil
 
 import pytest
+from horizon_autotests.config import TEST_REPORTS_DIR, XVFB_LOCK, SKIPS_FILE
+from horizon_autotests.utils import slugify
 
 from .fixtures import *  # noqa
-from .fixtures._config import TEST_REPORTS_DIR, XVFB_LOCK, SKIPS_FILE
-from .fixtures._utils import slugify
 
 
 def pytest_configure(config):

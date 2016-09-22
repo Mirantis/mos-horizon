@@ -20,12 +20,12 @@ Flavor tests.
 import pytest
 from waiting import wait
 
-from .fixtures._config import (ADMIN_NAME,
-                               ADMIN_PASSWD,
-                               ADMIN_PROJECT,
-                               USER_NAME,
-                               USER_PASSWD)
-from .fixtures._utils import generate_ids
+from horizon_autotests.config import (ADMIN_NAME,
+                                      ADMIN_PASSWD,
+                                      ADMIN_PROJECT,
+                                      USER_NAME,
+                                      USER_PASSWD)
+from horizon_autotests.utils import generate_ids
 
 
 @pytest.mark.usefixtures('admin_only')

@@ -20,7 +20,7 @@ Volumes steps.
 import pom
 from waiting import wait
 
-from horizon_autotests import EVENT_TIMEOUT
+from horizon_autotests.config import EVENT_TIMEOUT
 
 from .base import BaseSteps
 

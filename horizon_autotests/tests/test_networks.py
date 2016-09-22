@@ -19,7 +19,7 @@ Network tests.
 
 import pytest
 
-from .fixtures._utils import generate_ids
+from horizon_autotests.utils import generate_ids
 
 
 @pytest.mark.usefixtures('any_one')
@@ -49,7 +49,7 @@ class TestAdminOnly(object):
         networks_steps.admin_delete_network(network_name)
 
     def test_create_delete_subnet(self, networks_steps, network):
-        """Checks create delete subnet functionality"""
+        """Check create delete subnet functionality."""
         subnet_name = next(generate_ids('subnet'))
         networks_steps.admin_add_subnet(network.name, subnet_name)
 
@@ -59,7 +59,7 @@ class TestAdminOnly(object):
         networks_steps.admin_delete_subnet(network.name, subnet_name)
 
     def test_create_edit_delete_port(self, networks_steps, network):
-        """Checks create/edit/delete port functionality"""
+        """Check create/edit/delete port functionality."""
         port_name = next(generate_ids('port'))
         networks_steps.admin_add_port(network.name, port_name)
 

@@ -106,10 +106,6 @@ class AttrDict(attrdict.AttrDict):
 
     _updated_fields = {}
 
-    def __init__(self, *args, **kwgs):
-        """Constructor."""
-        super(AttrDict, self).__init__(*args, **kwgs)
-
     def put(self, **kwgs):
         """Put fields to update in buffer."""
         self._updated_fields[id(self)] = kwgs

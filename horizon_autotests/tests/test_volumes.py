@@ -19,8 +19,10 @@ Volumes tests.
 
 import pytest
 
-from .fixtures._config import INTERNAL_NETWORK_NAME, USER_NAME, USER_PASSWD
-from .fixtures._utils import generate_ids
+from horizon_autotests.config import (INTERNAL_NETWORK_NAME,
+                                      USER_NAME,
+                                      USER_PASSWD)
+from horizon_autotests.utils import generate_ids
 
 
 @pytest.mark.usefixtures('any_one')

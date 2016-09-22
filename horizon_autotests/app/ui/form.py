@@ -21,7 +21,7 @@ import pom
 from pom import ui
 from selenium.webdriver.common.by import By
 
-from horizon_autotests import ACTION_TIMEOUT
+from horizon_autotests.config import ACTION_TIMEOUT
 
 
 class Form(ui.Form):

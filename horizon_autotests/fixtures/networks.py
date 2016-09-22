@@ -20,8 +20,7 @@ Fixtures for networks.
 import pytest
 
 from horizon_autotests.steps import NetworksSteps
-
-from ._utils import AttrDict, generate_ids
+from horizon_autotests.utils import AttrDict, generate_ids
 
 __all__ = [
     'create_network',

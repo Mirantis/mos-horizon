@@ -19,7 +19,11 @@ Tests config.
 
 import os
 
-from ._utils import generate_ids
+from horizon_autotests.utils import generate_ids
+
+UI_TIMEOUT = 30
+ACTION_TIMEOUT = 60
+EVENT_TIMEOUT = 180
 
 DASHBOARD_URL = os.environ['DASHBOARD_URL']
 VIRTUAL_DISPLAY = os.environ.get('VIRTUAL_DISPLAY')
@@ -27,12 +31,14 @@ VIRTUAL_DISPLAY = os.environ.get('VIRTUAL_DISPLAY')
 DEFAULT_ADMIN_NAME, DEFAULT_ADMIN_PASSWD, DEFAULT_ADMIN_PROJECT = ['admin'] * 3
 ADMIN_NAME, ADMIN_PASSWD, ADMIN_PROJECT = list(generate_ids('admin', count=3))
 USER_NAME, USER_PASSWD, USER_PROJECT = list(generate_ids('user', count=3))
+
 FLOATING_NETWORK_NAME = 'admin_floating_net'
 INTERNAL_NETWORK_NAME = 'admin_internal_net'
 
 SKIPS_FILE = os.environ.get('SKIPS_FILE', os.path.abspath(
-    os.path.join(os.path.dirname(__file__), '..', 'skips_file.json')))
+    os.path.join(os.path.dirname(__file__), 'skips_file.json')))
 
 TEST_REPORTS_DIR = os.path.abspath(
-    os.path.join(os.path.dirname(__file__), '..', 'test_reports'))
+    os.path.join(os.path.dirname(__file__), 'tests', 'test_reports'))
+
 XVFB_LOCK = '/tmp/xvfb.lock'

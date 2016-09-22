@@ -19,10 +19,9 @@ Fixtures for instances.
 
 import pytest
 
+from horizon_autotests.config import INTERNAL_NETWORK_NAME
 from horizon_autotests.steps import InstancesSteps
-
-from ._config import INTERNAL_NETWORK_NAME
-from ._utils import AttrDict, generate_ids
+from horizon_autotests.utils import AttrDict, generate_ids
 
 __all__ = [
     'create_instance',

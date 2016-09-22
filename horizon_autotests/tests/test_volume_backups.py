@@ -21,7 +21,7 @@ import os
 
 import pytest
 
-from .fixtures._utils import generate_ids
+from horizon_autotests.utils import generate_ids
 
 
 @pytest.mark.reject_if('ceph' not in os.environ.get('JOB_NAME', 'ceph'),

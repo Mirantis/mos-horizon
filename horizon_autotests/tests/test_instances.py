@@ -19,7 +19,7 @@ Instance tests.
 
 import pytest
 
-from .fixtures._utils import generate_ids
+from horizon_autotests.utils import generate_ids
 
 
 @pytest.mark.usefixtures('any_one')

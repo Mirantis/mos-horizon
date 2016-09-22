@@ -20,8 +20,7 @@ Fixtures for flavors.
 import pytest
 
 from horizon_autotests.steps import FlavorsSteps
-
-from ._utils import AttrDict, generate_ids
+from horizon_autotests.utils import AttrDict, generate_ids
 
 __all__ = [
     'create_flavor',

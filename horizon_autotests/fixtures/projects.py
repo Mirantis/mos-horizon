@@ -20,8 +20,7 @@ Fixtures to manipulate with projects.
 import pytest
 
 from horizon_autotests.steps import ProjectsSteps
-
-from ._utils import AttrDict, generate_ids
+from horizon_autotests.utils import AttrDict, generate_ids
 
 __all__ = [
     'create_project',
