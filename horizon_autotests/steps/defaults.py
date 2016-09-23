@@ -18,6 +18,7 @@ Horizon steps for defaults.
 # limitations under the License.
 
 import pom
+from hamcrest import assert_that, equal_to
 
 from .base import BaseSteps
 
@@ -43,8 +44,9 @@ class DefaultsSteps(BaseSteps):
         if check:
             self.close_notification('success')
             for default_name, default_value in defaults.items():
-                assert getattr(page_defaults, 'label_' + default_name).value \
-                    == str(default_value)
+                assert_that(
+                    getattr(page_defaults, 'label_' + default_name).value,
+                    equal_to(str(default_value)))
 
     @pom.timeit('Step')
     def get_defaults(self, defaults):

@@ -20,6 +20,7 @@ Tests for volume snapshots.
 from urlparse import urlparse
 
 import pytest
+from hamcrest import assert_that, equal_to
 
 from horizon_autotests.config import ADMIN_NAME, ADMIN_PASSWD
 
@@ -44,7 +45,8 @@ class TestAdminOnly(object):
         """Verify that user can open dashboard help url."""
         with horizon.page_base.dropdown_menu_account as menu:
             menu.click()
-            assert urlparse(menu.item_help.href).netloc == "docs.openstack.org"
+            assert_that(urlparse(menu.item_help.href).netloc,
+                        equal_to("docs.openstack.org"))
             menu.click()
 
     def test_change_own_password(self, horizon, user, new_user_account,
@@ -71,4 +73,4 @@ class TestAdminOnly(object):
         update_settings(**new_settings)
         horizon.page_settings.refresh()
 
-        assert settings_steps.current_settings == new_settings
+        assert_that(settings_steps.current_settings, equal_to(new_settings))

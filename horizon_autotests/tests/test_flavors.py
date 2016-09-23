@@ -18,6 +18,7 @@ Flavor tests.
 # limitations under the License.
 
 import pytest
+from hamcrest import assert_that, equal_to, is_not
 from waiting import wait
 
 from horizon_autotests.config import (ADMIN_NAME,
@@ -39,7 +40,7 @@ class TestAdminOnly(object):
             for _ in range(2)}
         flavors_steps.update_metadata(flavor.name, metadata)
         flavor_metadata = flavors_steps.get_metadata(flavor.name)
-        assert metadata == flavor_metadata
+        assert_that(metadata, equal_to(flavor_metadata))
 
     def test_update_flavor(self, flavor, flavors_steps):
         """Verify that admin cat update flavor."""
@@ -66,7 +67,8 @@ class TestAdminOnly(object):
                  timeout_seconds=30, sleep_seconds=0.1)
 
             for row in form.tab_flavor.table_available_flavors.rows:
-                assert row.cell('name').value != flavor.name
+                assert_that(row.cell('name').value,
+                            is_not(equal_to(flavor.name)))
 
             form.cancel()
 

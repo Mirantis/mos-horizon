@@ -18,6 +18,7 @@ Instances steps.
 # limitations under the License.
 
 import pom
+from hamcrest import assert_that, equal_to
 from waiting import wait
 
 from horizon_autotests.config import EVENT_TIMEOUT, UI_TIMEOUT
@@ -142,8 +143,8 @@ class InstancesSteps(BaseSteps):
             name=instance_name).link_instance.click()
 
         if check:
-            assert self.app.page_instance.info_instance.label_name.value \
-                == instance_name
+            assert_that(self.app.page_instance.info_instance.label_name.value,
+                        equal_to(instance_name))
 
     @pom.timeit('Step')
     def filter_instances(self, query, check=True):

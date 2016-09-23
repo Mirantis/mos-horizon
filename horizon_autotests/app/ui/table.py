@@ -20,6 +20,7 @@ Custom table component.
 import re
 
 import pom
+from hamcrest import assert_that, equal_to
 from pom import ui
 from selenium.webdriver.common.by import By
 from waiting import wait
@@ -50,9 +51,11 @@ class Row(ui.Row):
         """Wait status value after transit statuses."""
         self.wait_for_presence()
         with self.cell('status') as cell:
+
             wait(lambda: cell.value not in self.transit_statuses,
                  timeout_seconds=EVENT_TIMEOUT, sleep_seconds=0.1)
-            assert cell.value == status
+
+            assert_that(cell.value, equal_to(status))
 
 
 @ui.register_ui(

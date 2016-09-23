@@ -18,6 +18,7 @@ Volumes steps.
 # limitations under the License.
 
 import pom
+from hamcrest import assert_that, contains_string, equal_to
 from waiting import wait
 
 from horizon_autotests.config import EVENT_TIMEOUT
@@ -122,8 +123,8 @@ class VolumesSteps(BaseSteps):
             name=volume_name).link_volume.click()
 
         if check:
-            assert self.app.page_volume.info_volume.label_name.value \
-                == volume_name
+            assert_that(self.app.page_volume.info_volume.label_name.value,
+                        equal_to(volume_name))
 
     @pom.timeit('Step')
     def change_volume_type(self, volume_name, volume_type=None, check=True):
@@ -268,7 +269,8 @@ class VolumesSteps(BaseSteps):
 
             with tab_volumes.table_volumes.row(name=volume_name) as row:
                 row.wait_for_status('In-use')
-                assert instance_name in row.cell('attached_to').value
+                assert_that(row.cell('attached_to').value,
+                            contains_string(instance_name))
 
     @pom.timeit('Step')
     def detach_instance(self, volume_name, instance_name, check=True):

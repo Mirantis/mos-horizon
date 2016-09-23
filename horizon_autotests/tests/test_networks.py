@@ -18,6 +18,7 @@ Network tests.
 # limitations under the License.
 
 import pytest
+from hamcrest import assert_that, equal_to
 
 from horizon_autotests.utils import generate_ids
 
@@ -79,5 +80,7 @@ class TestUserOnly(object):
         network_name = next(generate_ids('network'))
         create_network(network_name, shared=True)
 
-        assert horizon.page_networks.table_networks.row(
-            name=network_name).cell('shared').value == 'No'
+        assert_that(
+            horizon.page_networks.table_networks.row(
+                name=network_name).cell('shared').value,
+            equal_to('No'))

@@ -18,6 +18,7 @@ Images steps.
 # limitations under the License.
 
 import pom
+from hamcrest import assert_that, equal_to
 
 from horizon_autotests.config import EVENT_TIMEOUT
 
@@ -187,8 +188,8 @@ class ImagesSteps(BaseSteps):
             name=image_name).link_image.click()
 
         if check:
-            assert self.app.page_image.info_image.label_name.value \
-                == image_name
+            assert_that(self.app.page_image.info_image.label_name.value,
+                        equal_to(image_name))
 
     @pom.timeit('Step')
     def create_volume(self, image_name, volume_name, check=True):

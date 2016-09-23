@@ -19,6 +19,7 @@ Container tests.
 
 import pytest
 import requests
+from hamcrest import assert_that, contains_string
 
 from horizon_autotests.utils import generate_ids, generate_files
 
@@ -44,8 +45,8 @@ class TestAnyOne(object):
             folder_name = next(generate_ids('folder'))
             containers_steps.create_folder(folder_name)
 
-            assert folder_name in requests.get(
-                container_info['public_url']).text
+            assert_that(requests.get(container_info['public_url']).text,
+                        contains_string(folder_name))
             containers_steps.delete_folder(folder_name)
 
     def test_upload_file_to_container(self, container, containers_steps):

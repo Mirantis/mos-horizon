@@ -18,6 +18,7 @@ Tests for users.
 # limitations under the License.
 
 import pytest
+from hamcrest import assert_that, equal_to
 
 from horizon_autotests.config import ADMIN_NAME, ADMIN_PASSWD
 from horizon_autotests.utils import generate_ids
@@ -49,8 +50,10 @@ class TestAdminOnly(object):
         users_steps.delete_users([ADMIN_NAME], check=False)
         users_steps.close_notification('error')
 
-        assert users_steps.page_users().table_users.row(
-            name=ADMIN_NAME).is_present
+        assert_that(
+            users_steps.page_users().table_users.row(
+                name=ADMIN_NAME).is_present,
+            equal_to(True))
 
     def test_impossible_delete_admin_via_dropdown(self, users_steps):
         """Verify that admin can't delete himself with dropdown menu."""
@@ -58,7 +61,7 @@ class TestAdminOnly(object):
                 name=ADMIN_NAME).dropdown_menu as menu:
 
             menu.button_toggle.click()
-            assert not menu.item_delete.is_present
+            assert_that(menu.item_delete.is_present, equal_to(False))
 
     def test_impossible_disable_admin(self, horizon, users_steps):
         """Verify that admin can't disable himself."""
@@ -98,4 +101,4 @@ class TestUserOnly(object):
         """Verify that demo user can't see users list."""
         horizon.page_users.open()
         users_steps.close_notification('info')
-        assert not horizon.page_users.table_users.rows
+        assert_that(horizon.page_users.table_users.rows, equal_to([]))

@@ -18,6 +18,7 @@ Image tests.
 # limitations under the License.
 
 import pytest
+from hamcrest import assert_that, equal_to
 from waiting import wait
 
 from horizon_autotests.config import INTERNAL_NETWORK_NAME
@@ -55,32 +56,42 @@ class TestAnyOne(object):
         page_images = images_steps.page_images()
 
         page_images.table_images.row(name=image_names[0]).wait_for_presence()
-        assert page_images.table_images.link_next.is_present
-        assert not page_images.table_images.link_prev.is_present
+        assert_that(
+            page_images.table_images.link_next.is_present, equal_to(True))
+        assert_that(
+            page_images.table_images.link_prev.is_present, equal_to(False))
 
         page_images.table_images.link_next.click()
 
         page_images.table_images.row(name=image_names[1]).wait_for_presence()
-        assert page_images.table_images.link_next.is_present
-        assert page_images.table_images.link_prev.is_present
+        assert_that(
+            page_images.table_images.link_next.is_present, equal_to(True))
+        assert_that(
+            page_images.table_images.link_prev.is_present, equal_to(True))
 
         page_images.table_images.link_next.click()
 
         page_images.table_images.row(name='TestVM').wait_for_presence()
-        assert not page_images.table_images.link_next.is_present
-        assert page_images.table_images.link_prev.is_present
+        assert_that(
+            page_images.table_images.link_next.is_present, equal_to(False))
+        assert_that(
+            page_images.table_images.link_prev.is_present, equal_to(True))
 
         page_images.table_images.link_prev.click()
 
         page_images.table_images.row(name=image_names[1]).wait_for_presence()
-        assert page_images.table_images.link_next.is_present
-        assert page_images.table_images.link_prev.is_present
+        assert_that(
+            page_images.table_images.link_next.is_present, equal_to(True))
+        assert_that(
+            page_images.table_images.link_prev.is_present, equal_to(True))
 
         page_images.table_images.link_prev.click()
 
         page_images.table_images.row(name=image_names[0]).wait_for_presence()
-        assert page_images.table_images.link_next.is_present
-        assert not page_images.table_images.link_prev.is_present
+        assert_that(
+            page_images.table_images.link_next.is_present, equal_to(True))
+        assert_that(
+            page_images.table_images.link_prev.is_present, equal_to(False))
 
     def test_update_image_metadata(self, image, images_steps):
         """Verify that user can update image metadata."""
@@ -89,7 +100,7 @@ class TestAnyOne(object):
             for _ in range(2)}
         images_steps.update_metadata(image.name, metadata)
         image_metadata = images_steps.get_metadata(image.name)
-        assert metadata == image_metadata
+        assert_that(metadata, equal_to(image_metadata))
 
     def test_remove_protected_image(self, horizon, create_image, images_steps):
         """Verify that user can't delete protected image."""
@@ -138,15 +149,19 @@ class TestAnyOne(object):
 
                     ram_cell = row.cell('ram')
                     if get_size(ram_cell.value, to='mb') < ram_size:
-                        assert ram_cell.label_alert.is_present
+                        assert_that(
+                            ram_cell.label_alert.is_present, equal_to(True))
                     else:
-                        assert not ram_cell.label_alert.is_present
+                        assert_that(
+                            ram_cell.label_alert.is_present, equal_to(False))
 
                     disk_cell = row.cell('root_disk')
                     if get_size(disk_cell.value, to='gb') < disk_size:
-                        assert disk_cell.label_alert.is_present
+                        assert_that(
+                            disk_cell.label_alert.is_present, equal_to(True))
                     else:
-                        assert not disk_cell.label_alert.is_present
+                        assert_that(
+                            disk_cell.label_alert.is_present, equal_to(False))
                 form.cancel()
 
     def test_public_image_visibility(self, horizon, login):

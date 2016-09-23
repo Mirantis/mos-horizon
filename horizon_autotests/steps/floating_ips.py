@@ -18,6 +18,7 @@ Floating IPs steps.
 # limitations under the License.
 
 import pom
+from hamcrest import assert_that, equal_to
 
 from .base import BaseSteps
 
@@ -47,7 +48,7 @@ class FloatingIPsSteps(BaseSteps):
             new_ips = self._current_floating_ips
             allocated_ip = new_ips - old_ips
 
-            assert len(allocated_ip) == 1
+            assert_that(len(allocated_ip), equal_to(1))
             return allocated_ip.pop()
 
     @pom.timeit('Step')

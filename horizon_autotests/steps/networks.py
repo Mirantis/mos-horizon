@@ -18,6 +18,7 @@ Networks steps.
 # limitations under the License.
 
 import pom
+from hamcrest import assert_that, equal_to
 from waiting import wait
 
 from .base import BaseSteps
@@ -191,18 +192,19 @@ class NetworksSteps(BaseSteps):
 
     @pom.timeit('Step')
     def admin_view_network(self, network_name, check=True):
-        """Step to view network as admin"""
+        """Step to view network as admin."""
         self.page_admin_networks().table_networks.row(
             name=network_name).link_network.click()
 
         if check:
-            assert self.app.page_admin_network.info_network.label_name.value \
-                == network_name
+            assert_that(
+                self.app.page_admin_network.info_network.label_name.value,
+                equal_to(network_name))
 
     @pom.timeit('Step')
     def admin_add_subnet(self, network_name, subnet_name,
                          network_address='10.109.3.0/24', check=True):
-        """Step to create subnet from admin network overview page"""
+        """Step to create subnet from admin network overview page."""
         self.admin_view_network(network_name)
         page_network = self.app.page_admin_network
         page_network.button_create_subnet.click()
@@ -222,7 +224,7 @@ class NetworksSteps(BaseSteps):
 
     @pom.timeit('Step')
     def admin_delete_subnet(self, network_name, subnet_name, check=True):
-        """Step to delete subnet from admin network overview page"""
+        """Step to delete subnet from admin network overview page."""
         self.admin_view_network(network_name)
         page_network = self.app.page_admin_network
 
@@ -237,7 +239,7 @@ class NetworksSteps(BaseSteps):
 
     @pom.timeit('Step')
     def admin_add_port(self, network_name, port_name, check=True):
-        """Step to create port from admin network overview page"""
+        """Step to create port from admin network overview page."""
         self.admin_view_network(network_name)
         page_network = self.app.page_admin_network
         page_network.button_create_port.click()
@@ -254,7 +256,7 @@ class NetworksSteps(BaseSteps):
     @pom.timeit('Step')
     def admin_update_port(self, network_name, port_name, new_port_name,
                           check=True):
-        """Step to update port from admin network overview page"""
+        """Step to update port from admin network overview page."""
         self.admin_view_network(network_name)
         page_network = self.app.page_admin_network
 
@@ -272,7 +274,7 @@ class NetworksSteps(BaseSteps):
 
     @pom.timeit('Step')
     def admin_delete_port(self, network_name, port_name, check=True):
-        """Step to delete port from admin network overview page"""
+        """Step to delete port from admin network overview page."""
         self.admin_view_network(network_name)
         page_network = self.app.page_admin_network
 

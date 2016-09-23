@@ -18,6 +18,7 @@ Tests for volume snapshots.
 # limitations under the License.
 
 import pytest
+from hamcrest import assert_that, contains_string, equal_to
 
 from horizon_autotests.utils import generate_ids
 
@@ -43,36 +44,49 @@ class TestAnyOne(object):
 
         tab_snapshots.table_snapshots.row(
             name=snapshot_names[2]).wait_for_presence(30)
-        assert tab_snapshots.table_snapshots.link_next.is_present
-        assert not tab_snapshots.table_snapshots.link_prev.is_present
+        assert_that(
+            tab_snapshots.table_snapshots.link_next.is_present, equal_to(True))
+        assert_that(
+            tab_snapshots.table_snapshots.link_prev.is_present,
+            equal_to(False))
 
         tab_snapshots.table_snapshots.link_next.click()
 
         tab_snapshots.table_snapshots.row(
             name=snapshot_names[1]).wait_for_presence(30)
-        assert tab_snapshots.table_snapshots.link_next.is_present
-        assert tab_snapshots.table_snapshots.link_prev.is_present
+        assert_that(
+            tab_snapshots.table_snapshots.link_next.is_present, equal_to(True))
+        assert_that(
+            tab_snapshots.table_snapshots.link_prev.is_present, equal_to(True))
 
         tab_snapshots.table_snapshots.link_next.click()
 
         tab_snapshots.table_snapshots.row(
             name=snapshot_names[0]).wait_for_presence(30)
-        assert not tab_snapshots.table_snapshots.link_next.is_present
-        assert tab_snapshots.table_snapshots.link_prev.is_present
+        assert_that(
+            tab_snapshots.table_snapshots.link_next.is_present,
+            equal_to(False))
+        assert_that(
+            tab_snapshots.table_snapshots.link_prev.is_present, equal_to(True))
 
         tab_snapshots.table_snapshots.link_prev.click()
 
         tab_snapshots.table_snapshots.row(
             name=snapshot_names[1]).wait_for_presence(30)
-        assert tab_snapshots.table_snapshots.link_next.is_present
-        assert tab_snapshots.table_snapshots.link_prev.is_present
+        assert_that(
+            tab_snapshots.table_snapshots.link_next.is_present, equal_to(True))
+        assert_that(
+            tab_snapshots.table_snapshots.link_prev.is_present, equal_to(True))
 
         tab_snapshots.table_snapshots.link_prev.click()
 
         tab_snapshots.table_snapshots.row(
             name=snapshot_names[2]).wait_for_presence(30)
-        assert tab_snapshots.table_snapshots.link_next.is_present
-        assert not tab_snapshots.table_snapshots.link_prev.is_present
+        assert_that(
+            tab_snapshots.table_snapshots.link_next.is_present, equal_to(True))
+        assert_that(
+            tab_snapshots.table_snapshots.link_prev.is_present,
+            equal_to(False))
 
     def test_create_volume_from_snapshot(self, snapshot, volumes_steps):
         """Verify that user can create volume from snapshot."""
@@ -85,5 +99,6 @@ class TestAnyOne(object):
                                       check=False)
 
         form = volumes_steps.app.page_volumes.tab_volumes.form_create_snapshot
-        assert form.field_name.help_message == u'This field is required.'
+        assert_that(form.field_name.help_message,
+                    contains_string('field is required'))
         form.cancel()

@@ -18,6 +18,7 @@ Volumes tests.
 # limitations under the License.
 
 import pytest
+from hamcrest import assert_that, equal_to
 
 from horizon_autotests.config import (INTERNAL_NETWORK_NAME,
                                       USER_NAME,
@@ -54,36 +55,46 @@ class TestAnyOne(object):
 
         tab_volumes.table_volumes.row(
             name=volume_names[2]).wait_for_presence(30)
-        assert tab_volumes.table_volumes.link_next.is_present
-        assert not tab_volumes.table_volumes.link_prev.is_present
+        assert_that(
+            tab_volumes.table_volumes.link_next.is_present, equal_to(True))
+        assert_that(
+            tab_volumes.table_volumes.link_prev.is_present, equal_to(False))
 
         tab_volumes.table_volumes.link_next.click()
 
         tab_volumes.table_volumes.row(
             name=volume_names[1]).wait_for_presence(30)
-        assert tab_volumes.table_volumes.link_next.is_present
-        assert tab_volumes.table_volumes.link_prev.is_present
+        assert_that(
+            tab_volumes.table_volumes.link_next.is_present, equal_to(True))
+        assert_that(
+            tab_volumes.table_volumes.link_prev.is_present, equal_to(True))
 
         tab_volumes.table_volumes.link_next.click()
 
         tab_volumes.table_volumes.row(
             name=volume_names[0]).wait_for_presence(30)
-        assert not tab_volumes.table_volumes.link_next.is_present
-        assert tab_volumes.table_volumes.link_prev.is_present
+        assert_that(
+            tab_volumes.table_volumes.link_next.is_present, equal_to(False))
+        assert_that(
+            tab_volumes.table_volumes.link_prev.is_present, equal_to(True))
 
         tab_volumes.table_volumes.link_prev.click()
 
         tab_volumes.table_volumes.row(
             name=volume_names[1]).wait_for_presence(30)
-        assert tab_volumes.table_volumes.link_next.is_present
-        assert tab_volumes.table_volumes.link_prev.is_present
+        assert_that(
+            tab_volumes.table_volumes.link_next.is_present, equal_to(True))
+        assert_that(
+            tab_volumes.table_volumes.link_prev.is_present, equal_to(True))
 
         tab_volumes.table_volumes.link_prev.click()
 
         tab_volumes.table_volumes.row(
             name=volume_names[2]).wait_for_presence(30)
-        assert tab_volumes.table_volumes.link_next.is_present
-        assert not tab_volumes.table_volumes.link_prev.is_present
+        assert_that(
+            tab_volumes.table_volumes.link_next.is_present, equal_to(True))
+        assert_that(
+            tab_volumes.table_volumes.link_prev.is_present, equal_to(False))
 
     def test_view_volume(self, volume, volumes_steps):
         """Verify that user can view volume info."""

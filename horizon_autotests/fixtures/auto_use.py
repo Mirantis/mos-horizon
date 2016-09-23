@@ -79,11 +79,7 @@ def virtual_display(request):
     # http://blog.jeffterrace.com/2012/07/xvfb-memory-leak-workaround.html
     # and disables X access control
     args = ["-noreset", "-ac"]
-
-    if hasattr(_virtual_display, 'extra_xvfb_args'):
-        _virtual_display.extra_xvfb_args.extend(args)  # xvfbwrapper>=0.2.8
-    else:
-        _virtual_display.xvfb_cmd.extend(args)
+    _virtual_display.extra_xvfb_args.extend(args)
 
     with Lock(XVFB_LOCK):
         LOGGER.info('Start xvfb')

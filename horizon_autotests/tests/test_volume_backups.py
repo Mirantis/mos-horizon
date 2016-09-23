@@ -20,6 +20,7 @@ Tests for volume backups.
 import os
 
 import pytest
+from hamcrest import assert_that, contains_string, equal_to
 
 from horizon_autotests.utils import generate_ids
 
@@ -41,41 +42,52 @@ class TestAnyOne(object):
 
         tab_backups.table_backups.row(
             name=backup_names[2]).wait_for_presence(30)
-        assert tab_backups.table_backups.link_next.is_present
-        assert not tab_backups.table_backups.link_prev.is_present
+        assert_that(
+            tab_backups.table_backups.link_next.is_present, equal_to(True))
+        assert_that(
+            tab_backups.table_backups.link_prev.is_present, equal_to(False))
 
         tab_backups.table_backups.link_next.click()
 
         tab_backups.table_backups.row(
             name=backup_names[1]).wait_for_presence(30)
-        assert tab_backups.table_backups.link_next.is_present
-        assert tab_backups.table_backups.link_prev.is_present
+        assert_that(
+            tab_backups.table_backups.link_next.is_present, equal_to(True))
+        assert_that(
+            tab_backups.table_backups.link_prev.is_present, equal_to(True))
 
         tab_backups.table_backups.link_next.click()
 
         tab_backups.table_backups.row(
             name=backup_names[0]).wait_for_presence(30)
-        assert not tab_backups.table_backups.link_next.is_present
-        assert tab_backups.table_backups.link_prev.is_present
+        assert_that(
+            tab_backups.table_backups.link_next.is_present, equal_to(False))
+        assert_that(
+            tab_backups.table_backups.link_prev.is_present, equal_to(True))
 
         tab_backups.table_backups.link_prev.click()
 
         tab_backups.table_backups.row(
             name=backup_names[1]).wait_for_presence(30)
-        assert tab_backups.table_backups.link_next.is_present
-        assert tab_backups.table_backups.link_prev.is_present
+        assert_that(
+            tab_backups.table_backups.link_next.is_present, equal_to(True))
+        assert_that(
+            tab_backups.table_backups.link_prev.is_present, equal_to(True))
 
         tab_backups.table_backups.link_prev.click()
 
         tab_backups.table_backups.row(
             name=backup_names[2]).wait_for_presence(30)
-        assert tab_backups.table_backups.link_next.is_present
-        assert not tab_backups.table_backups.link_prev.is_present
+        assert_that(
+            tab_backups.table_backups.link_next.is_present, equal_to(True))
+        assert_that(
+            tab_backups.table_backups.link_prev.is_present, equal_to(False))
 
     def test_cannot_create_backup_without_name(self, volume, volumes_steps):
         """Verify that volume backup without name cannot be created."""
         volumes_steps.create_backup(volume.name, backup_name='', check=False)
 
         form = volumes_steps.app.page_volumes.tab_volumes.form_create_backup
-        assert form.field_name.help_message == u'This field is required.'
+        assert_that(form.field_name.help_message,
+                    contains_string('field is required'))
         form.cancel()

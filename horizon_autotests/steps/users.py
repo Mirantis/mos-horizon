@@ -18,6 +18,7 @@ Users steps.
 # limitations under the License.
 
 import pom
+from hamcrest import assert_that, equal_to
 from waiting import wait
 
 from .base import BaseSteps
@@ -158,7 +159,7 @@ class UsersSteps(BaseSteps):
             need_status = 'No'
 
         with self.page_users().table_users.row(name=username) as row:
-            assert row.cell('enabled').value == curr_status
+            assert_that(row.cell('enabled').value, equal_to(curr_status))
 
             with row.dropdown_menu as menu:
                 menu.button_toggle.click()
@@ -166,7 +167,7 @@ class UsersSteps(BaseSteps):
 
             if check:
                 self.close_notification('success')
-                assert row.cell('enabled').value == need_status
+                assert_that(row.cell('enabled').value, equal_to(need_status))
 
     @pom.timeit('Step')
     def update_user(self, username, new_username, check=True):
