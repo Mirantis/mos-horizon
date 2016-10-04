@@ -1,5 +1,7 @@
 {
     "test_instances_pagination[admin]": "https://bugs.launchpad.net/horizon/+bug/1616921",
     "test_instances_pagination[user]": "https://bugs.launchpad.net/horizon/+bug/1616921",
+    "test_volume_backups_pagination[admin]": "https://bugs.launchpad.net/mos/+bug/1622561",
+    "test_volume_backups_pagination[user]": "https://bugs.launchpad.net/mos/+bug/1622561",
     "test_migrate_volume": "https://bugs.launchpad.net/mos/+bug/1616934"
 }
